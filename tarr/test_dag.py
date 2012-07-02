@@ -39,9 +39,9 @@ class DagConfigReader(m.DagConfigReader):
         self.call_count_new_node += 1
         return super(DagConfigReader, self).new_node()
 
-    def new_dag(self, name2node):
+    def new_dag(self):
         self.call_count_new_dag += 1
-        return super(DagConfigReader, self).new_dag(name2node)
+        return super(DagConfigReader, self).new_dag()
 
     def node_by_name(self, name):
         for node in self.nodes:

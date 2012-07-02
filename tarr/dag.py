@@ -19,10 +19,9 @@ The output definitions are optional, if missing
 
 from pyparsing import Word, Literal, Or, Optional, ZeroOrMore, OneOrMore, StringEnd, alphanums
 from pyparsing import ParseFatalException
-from zope.dottedname.resolve import resolve as dottedname_resolve
 
 
-class Node:
+class Node(object):
 
     name = None
     impl = None
@@ -34,16 +33,17 @@ class Node:
     nn_human = None
 
 
-class DAG:
+class DAG(object):
 
     start_node = None
     name2node = None
 
-    def __init__(self, name2node):
-        self.name2node = name2node
-
     def node_by_name(self, name):
         return self.name2node[name]
+
+    @property
+    def nodes(self):
+        return self.name2node.itervalues()
 
 
 class DagConfigReader(object):
@@ -61,8 +61,8 @@ class DagConfigReader(object):
     def new_node(self):
         return Node()
 
-    def new_dag(self, name2node):
-        return DAG(name2node)
+    def new_dag(self):
+        return DAG()
 
     def __init__(self):
         self.nodes = []
@@ -144,7 +144,8 @@ class DagConfigReader(object):
         if self.futures:
             raise ParseFatalException('Undefined nodes: {0}'.format(self.futures))
 
-        dag = self.new_dag(dict((n.name, n) for n in self.nodes))
+        dag = self.new_dag()
+        dag.name2node = dict((n.name, n) for n in self.nodes)
         dag.start_node = self.nodes[0]
 
         return dag
