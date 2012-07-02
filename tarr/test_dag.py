@@ -1,5 +1,5 @@
 import unittest
-import dag as m # odule
+from tarr import dag as m # odule
 
 
 TEST_GOOD_CONFIG = '''
@@ -22,6 +22,10 @@ TEST_CONFIG_BACKREF = '''
 node1 : impl
 node2 : impl
     F -> node1
+'''
+
+TEST_CONFIG_STOP_REDEFINED = '''
+STOP: whatever
 '''
 
 class DagConfigReader(m.DagConfigReader):
@@ -85,7 +89,7 @@ class TestDagConfig(unittest.TestCase):
 
     def test_from_string(self):
         reader = DagConfigReader()
-        
+
         dag = reader.from_string(TEST_GOOD_CONFIG)
 
         self.assertEqual(3, len(dag.name2node))
@@ -94,6 +98,8 @@ class TestDagConfig(unittest.TestCase):
         node1 = dag.node_by_name('node1')
         node_fail = dag.node_by_name('node_fail')
         node_success = dag.node_by_name('node_success')
+
+        self.assertEqual(node1, dag.start_node)
 
         self.assertEqual('impl', node1.impl)
         self.assertEqual('node_success', node1.success)
@@ -110,12 +116,22 @@ class TestDagConfig(unittest.TestCase):
         self.assertEqual(None, node_fail.fail)
         self.assertEqual(None, node_fail.human)
 
-    def test_missing_node__from_string__dies(self):
+    def assert_from_string_fails(self, config, *messages):
         reader = DagConfigReader()
 
-        self.assertRaises(Exception, lambda: reader.from_string(TEST_CONFIG_MISSING_DEFS))
+        try:
+            reader.from_string(config)
+            self.fail()
+        except Exception as e:
+            emsg = str(e).lower()
+            for msg in messages:
+                self.assertIn(msg, emsg)
+
+    def test_missing_node__from_string__dies(self):
+        self.assert_from_string_fails(TEST_CONFIG_MISSING_DEFS, 'undefined nodes')
 
     def test_backref_in_config__from_string__dies(self):
-        reader = DagConfigReader()
+        self.assert_from_string_fails(TEST_CONFIG_BACKREF, 'already defined', 'not monotone')
 
-        self.assertRaises(Exception, lambda: reader.from_string(TEST_CONFIG_BACKREF))
+    def test_node_definition_for_STOP__raises_exception(self):
+        self.assert_from_string_fails(TEST_CONFIG_STOP_REDEFINED, 'reserved name', 'stop')

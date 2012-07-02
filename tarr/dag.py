@@ -12,7 +12,7 @@ where
  O is either S, F or H,
  nodename-oN is either some not-yet defined nodename or the special nodename STOP.
 
-The output definitions are optional, if missing 
+The output definitions are optional, if missing
   S: and F: defaults to next node defined
   H: for asking for human assistance on the data and re-running the node
 '''
@@ -118,7 +118,7 @@ class DagConfigReader:
         # Grammar for config:
         wordchars = alphanums + '_'
         nodename = Word(wordchars)
-        nodeimpl = Word(wordchars + '.:')
+        nodeimpl = Word(wordchars + '.')
         outputlabel = Or([Literal('S'), Literal('F'), Literal('H')])
         output_edgedef = OneOrMore(outputlabel) + Literal('->') + nodename
         output_edgedefs = ZeroOrMore(output_edgedef)
@@ -155,6 +155,8 @@ class DagConfigReader:
     def handle_nodedef(self, s, loc, toks):
         try:
             nodename, _, nodeimpl = toks[:3]
+            if nodename is None:
+                raise Exception('{0} is reserved name for marking the place to STOP'.format(self.STOP_NODE_NAME))
             self.define(nodename, nodeimpl)
             if len(toks) > 3:
                 output_edgedefs = toks[3:]
