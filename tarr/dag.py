@@ -29,9 +29,9 @@ class Node:
 
     # only 3 outgoing edges supported:
     # they contain node names or None for STOP:
-    success = None
-    fail = None
-    human = None
+    nn_success = None
+    nn_fail = None
+    nn_human = None
 
 
 class DAG:
@@ -80,8 +80,8 @@ class DagConfigReader(object):
         node = self.new_node()
         node.name = name
         node.impl = impl
-        node.success = self.IMPLICIT_NEXT
-        node.fail = self.IMPLICIT_NEXT
+        node.nn_success = self.IMPLICIT_NEXT
+        node.nn_fail = self.IMPLICIT_NEXT
 
         self.fix_implicit_edges_with(name)
         self.nodes.append(node)
@@ -94,10 +94,10 @@ class DagConfigReader(object):
             return
 
         node_to_fix = self.nodes[-1]
-        if node_to_fix.success == self.IMPLICIT_NEXT:
-            node_to_fix.success = nodename
-        if node_to_fix.fail == self.IMPLICIT_NEXT:
-            node_to_fix.fail = nodename
+        if node_to_fix.nn_success == self.IMPLICIT_NEXT:
+            node_to_fix.nn_success = nodename
+        if node_to_fix.nn_fail == self.IMPLICIT_NEXT:
+            node_to_fix.nn_fail = nodename
 
     def add_edge(self, label, destnodename):
         assert self.nodes
@@ -110,11 +110,11 @@ class DagConfigReader(object):
             self.futures.add(destnodename)
 
         if label == 'S':
-            node.success = destnodename
+            node.nn_success = destnodename
         elif label == 'F':
-            node.fail = destnodename
+            node.nn_fail = destnodename
         elif label == 'H':
-            node.human = destnodename
+            node.nn_human = destnodename
 
     def from_string(self, string):
         # Grammar for config:

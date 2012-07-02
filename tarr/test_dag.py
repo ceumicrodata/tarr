@@ -90,7 +90,7 @@ class TestDagConfig(unittest.TestCase):
         reader.define('nodename', 'impl')
 
         reader.add_edge('S', 'success')
-        self.assertEqual('success', reader.node_by_name('nodename').success)
+        self.assertEqual('success', reader.node_by_name('nodename').nn_success)
 
     def test_dest_name_already_defined__add_edge__dies(self):
         reader = DagConfigReader()
@@ -115,19 +115,19 @@ class TestDagConfig(unittest.TestCase):
         self.assertEqual(node1, dag.start_node)
 
         self.assertEqual('impl', node1.impl)
-        self.assertEqual('node_success', node1.success)
-        self.assertEqual('node_fail', node1.human)
-        self.assertEqual('node_fail', node1.fail)
+        self.assertEqual('node_success', node1.nn_success)
+        self.assertEqual('node_fail', node1.nn_human)
+        self.assertEqual('node_fail', node1.nn_fail)
 
         self.assertEqual('impl_success', node_success.impl)
-        self.assertEqual(None, node_success.success)
-        self.assertEqual(None, node_success.human)
-        self.assertEqual('node_fail', node_success.fail)
+        self.assertEqual(None, node_success.nn_success)
+        self.assertEqual(None, node_success.nn_human)
+        self.assertEqual('node_fail', node_success.nn_fail)
 
         self.assertEqual('impl_fail', node_fail.impl)
-        self.assertEqual(None, node_fail.success)
-        self.assertEqual(None, node_fail.fail)
-        self.assertEqual(None, node_fail.human)
+        self.assertEqual(None, node_fail.nn_success)
+        self.assertEqual(None, node_fail.nn_fail)
+        self.assertEqual(None, node_fail.nn_human)
 
     def assert_from_string_fails(self, config, *messages):
         reader = DagConfigReader()
