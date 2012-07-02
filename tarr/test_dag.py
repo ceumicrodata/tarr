@@ -1,4 +1,5 @@
 import unittest
+
 from tarr import dag as m # odule
 
 
@@ -28,7 +29,19 @@ TEST_CONFIG_STOP_REDEFINED = '''
 STOP: whatever
 '''
 
+
 class DagConfigReader(m.DagConfigReader):
+
+    call_count_new_node = 0
+    call_count_new_dag = 0
+
+    def new_node(self):
+        self.call_count_new_node += 1
+        return super(DagConfigReader, self).new_node()
+
+    def new_dag(self, name2node):
+        self.call_count_new_dag += 1
+        return super(DagConfigReader, self).new_dag(name2node)
 
     def node_by_name(self, name):
         for node in self.nodes:
@@ -135,3 +148,15 @@ class TestDagConfig(unittest.TestCase):
 
     def test_node_definition_for_STOP__raises_exception(self):
         self.assert_from_string_fails(TEST_CONFIG_STOP_REDEFINED, 'reserved name', 'stop')
+
+    def test_from_string_calls_new_node(self):
+        reader = DagConfigReader()
+
+        reader.from_string(TEST_GOOD_CONFIG)
+        self.assertEqual(3, reader.call_count_new_node)
+
+    def test_from_string_calls_new_dag(self):
+        reader = DagConfigReader()
+
+        reader.from_string(TEST_GOOD_CONFIG)
+        self.assertEqual(1, reader.call_count_new_dag)

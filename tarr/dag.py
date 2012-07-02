@@ -39,15 +39,14 @@ class DAG:
     start_node = None
     name2node = None
 
-    def __init__(self, start_node, name2node):
-        self.start_node = start_node
+    def __init__(self, name2node):
         self.name2node = name2node
 
     def node_by_name(self, name):
         return self.name2node[name]
 
 
-class DagConfigReader:
+class DagConfigReader(object):
 
     STOP_NODE_NAME = 'STOP'
 
@@ -59,10 +58,13 @@ class DagConfigReader:
     nodenames = None
     IMPLICIT_NEXT = object()
 
-    def __init__(self):
-        self.reset()
+    def new_node(self):
+        return Node()
 
-    def reset(self):
+    def new_dag(self, name2node):
+        return DAG(name2node)
+
+    def __init__(self):
         self.nodes = []
         self.futures = set()
         self.nodenames = set()
@@ -75,7 +77,7 @@ class DagConfigReader:
         if name in self.nodenames:
             raise Exception('Duplicate definition of {0}'.format(name))
 
-        node = Node()
+        node = self.new_node()
         node.name = name
         node.impl = impl
         node.success = self.IMPLICIT_NEXT
@@ -142,9 +144,9 @@ class DagConfigReader:
         if self.futures:
             raise ParseFatalException('Undefined nodes: {0}'.format(self.futures))
 
-        dag = DAG(self.nodes[0], dict((n.name, n) for n in self.nodes))
-        # release all objects
-        self.reset()
+        dag = self.new_dag(dict((n.name, n) for n in self.nodes))
+        dag.start_node = self.nodes[0]
+
         return dag
 
     def handle_nodename(self, s, loc, toks):
