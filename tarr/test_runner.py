@@ -1,6 +1,6 @@
 import unittest
 from tarr import runner as m # odule
-from tarr.processor import Processor
+from tarr.processor import Processor, processor_function
 from tarr.data import Data
 
 
@@ -16,17 +16,17 @@ class Processor_2div(Processor):
         return 2.0 / data
 
 
-class Processor_erase(Processor):
-
-    def process(self, data):
-        return 'Oops'
+# same as above, but just defining the process method directly:
+@processor_function
+def processor_erase(data):
+    return 'Oops'
 
 
 TEST_CONFIG = '''
 plus_one: tarr.test_runner.Processor_1plus
 two_div: tarr.test_runner.Processor_2div
     S -> STOP
-erase: tarr.test_runner.Processor_erase
+erase: tarr.test_runner.processor_erase
 '''
 
 
@@ -40,7 +40,7 @@ class TestRunner(unittest.TestCase):
 
         self.assertTrue(isinstance(plus_one.processor, Processor_1plus))
         self.assertTrue(isinstance(two_div.processor, Processor_2div))
-        self.assertTrue(isinstance(erase.processor, Processor_erase))
+        self.assertTrue(isinstance(erase.processor, processor_erase))
 
     def test_process(self):
         runner = m.Runner(TEST_CONFIG)

@@ -24,3 +24,13 @@ class Processor(object):
         this is the method to be overridden in subclasses
         '''
         raise NotImplementedError
+
+
+def processor_function(func):
+    class wrapper(Processor):
+
+        def process(self, data):
+            return func(data)
+
+    wrapper.__name__ = func.__name__
+    return wrapper
