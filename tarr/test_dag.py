@@ -1,6 +1,7 @@
 import unittest
 
 from tarr import dag as m # odule
+from tarr import ProcessorFailed
 
 
 TEST_GOOD_CONFIG = '''
@@ -134,7 +135,7 @@ class TestDagConfig(unittest.TestCase):
 
         try:
             reader.from_string(config)
-            self.fail()
+            raise ProcessorFailed
         except Exception as e:
             emsg = str(e).lower()
             for msg in messages:

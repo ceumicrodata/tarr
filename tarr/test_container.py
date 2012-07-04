@@ -2,6 +2,7 @@ import unittest
 import mock
 
 from tarr import container as m # odule
+from tarr import ProcessorFailed, ProcessorNeedsHuman
 from tarr.processor import Processor
 from tarr.data import Data
 
@@ -73,7 +74,7 @@ class TestContainer_process(unittest.TestCase):
 
     def test_keeps_id_and_old_payload_on_failure(self):
         def fail(data):
-            processor_container.fail()
+            raise ProcessorFailed
         processor_container = self.get_container_with_mock_processor_process(side_effect=fail)
 
         processor_container.process(Data(id=3, payload=14))
@@ -84,7 +85,7 @@ class TestContainer_process(unittest.TestCase):
 
     def test_after_fail_can_not_succeed(self):
         def fail(data):
-            processor_container.fail()
+            raise ProcessorFailed
             return 99
         processor_container = self.get_container_with_mock_processor_process(side_effect=fail)
 
@@ -96,7 +97,7 @@ class TestContainer_process(unittest.TestCase):
 
     def test_after_needs_human_can_not_succeed(self):
         def fail(data):
-            processor_container.need_human()
+            raise ProcessorNeedsHuman
             return 99
         processor_container = self.get_container_with_mock_processor_process(side_effect=fail)
 

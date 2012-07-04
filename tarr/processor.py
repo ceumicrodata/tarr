@@ -1,3 +1,10 @@
+class ProcessorFailed(Exception):
+    pass
+
+
+class ProcessorNeedsHuman(Exception):
+    pass
+
 
 class Processor(object):
     '''
@@ -12,12 +19,6 @@ class Processor(object):
 
     def __init__(self, container):
         self.container = container
-
-    def fail(self):
-        self.container.fail()
-
-    def need_human(self):
-        self.container.need_human()
 
     def process(self, data):
         ''' returns the processed data
@@ -42,7 +43,7 @@ def branch(func):
         def process(self, data):
             if func(data):
                 return data
-            self.fail()
+            raise ProcessorFailed
 
     wrapper.__name__ = func.__name__
     return wrapper
