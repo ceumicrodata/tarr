@@ -1,7 +1,8 @@
 import unittest
 from tarr import runner as m # odule
-from tarr.processor import Processor, processor_function
+from tarr.processor import Processor
 from tarr.data import Data
+import tarr
 
 
 class Processor_1plus(Processor):
@@ -17,7 +18,7 @@ class Processor_2div(Processor):
 
 
 # same as above, but just defining the process method directly:
-@processor_function
+@tarr.rule
 def processor_erase(data):
     return 'Oops'
 

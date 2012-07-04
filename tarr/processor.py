@@ -1,3 +1,4 @@
+
 class Processor(object):
     '''
     Base class for data processors.
@@ -26,7 +27,36 @@ class Processor(object):
         raise NotImplementedError
 
 
-def processor_function(func):
+# decorators that create Processor-s from functions
+
+# Test from Test And Rule Registry, not named `test` to avoid test runner picking it up
+def branch(func):
+    '''
+    # branching construct
+    @test
+    def odd(data):
+        return data.number % 2 == 1
+    '''
+    class wrapper(Processor):
+
+        def process(self, data):
+            if func(data):
+                return data
+            self.fail()
+
+    wrapper.__name__ = func.__name__
+    return wrapper
+
+
+# Rule from Test And Rule Registry
+def rule(func):
+    '''
+    # transformation construct
+    @rule
+    def transform(data):
+        ...
+        return new_data
+    '''
     class wrapper(Processor):
 
         def process(self, data):
