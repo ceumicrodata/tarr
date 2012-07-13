@@ -17,6 +17,7 @@ The output definitions are optional, if missing
   H: for asking for human assistance on the data and re-running the node
 '''
 
+import itertools
 from pyparsing import Word, Literal, Or, Optional, ZeroOrMore, OneOrMore, StringEnd, alphanums
 from pyparsing import ParseFatalException
 
@@ -32,6 +33,35 @@ class Node(object):
     nn_fail = None
     nn_human = None
 
+    def to_dot(self):
+        '''Create DOT output - see GraphViz'''
+
+        # parallel arrays
+        names = []
+        labels = []
+
+        def addlabel(name, label):
+            if name is None:
+                return
+
+            try:
+                labels[names.index(name)] += label
+            except ValueError:
+                # new node
+                names.append(name)
+                labels.append(label)
+
+        addlabel(self.nn_success, 'S')
+        addlabel(self.nn_fail, 'F')
+        addlabel(self.nn_human, 'H')
+
+        if self.nn_success and self.nn_success == self.nn_fail and self.nn_human is None:
+            return '{0} -> {1}'.format(self.name, self.nn_success)
+
+        return ' '.join(
+            '{0} -> {1} [label={2}]'.format(self.name, name, label)
+            for (name, label) in zip(names, labels))
+
 
 class DAG(object):
 
@@ -44,6 +74,15 @@ class DAG(object):
     @property
     def nodes(self):
         return self.name2node.itervalues()
+
+    def to_dot(self):
+        '''Create DOT output - see GraphViz'''
+
+        return '\n'.join(
+            itertools.chain(
+                ['digraph {', 'node [ordering=out,shape=Mrecord]'],
+                (n.to_dot() for n in self.nodes),
+                ['}']))
 
 
 class DagConfigReader(object):

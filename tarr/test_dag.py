@@ -50,6 +50,62 @@ class DagConfigReader(m.DagConfigReader):
                 return node
 
 
+class TestNode_to_dot(unittest.TestCase):
+
+    # -> STOP: missing edge
+    # S, F same, H is STOP: no label
+
+    def test_all_undefined(self):
+        n = m.Node()
+        n.name = 'a_node'
+        self.assertEqual('', n.to_dot())
+
+    def test_SF_same_H_undefined(self):
+        n = m.Node()
+        n.name = 'a_node'
+        n.nn_success = n.nn_fail = 'next'
+        self.assertEqual('a_node -> next', n.to_dot())
+
+    def test_S_differs_from_F(self):
+        n = m.Node()
+        n.name = 'a_node'
+        n.nn_success = 'b_node'
+        n.nn_fail = 'f_node'
+        self.assertEqual('a_node -> b_node [label=S] a_node -> f_node [label=F]', n.to_dot())
+
+    def test_SF_same_H_defined(self):
+        n = m.Node()
+        n.name = 'a_node'
+        n.nn_success = 'b_node'
+        n.nn_fail = 'b_node'
+        n.nn_human = 'c_node'
+        self.assertEqual('a_node -> b_node [label=SF] a_node -> c_node [label=H]', n.to_dot())
+
+    def test_FH_multi_output(self):
+        n = m.Node()
+        n.name = 'a_node'
+        n.nn_fail = 'b_node'
+        n.nn_human = 'b_node'
+        self.assertEqual('a_node -> b_node [label=FH]', n.to_dot())
+
+
+class TestDag_to_dot(unittest.TestCase):
+
+    def test(self):
+        n1 = m.Node()
+        n1.name = 'n1'
+        n1.nn_success = 'n2'
+
+        n2 = m.Node()
+        n2.name = 'n2'
+
+        dag = m.DAG()
+        dag.start_node = n1
+        dag.name2node = dict((node.name, node) for node in [n1, n2])
+        self.assertIn(n1.to_dot(), dag.to_dot())
+        self.assertIn(n2.to_dot(), dag.to_dot())
+
+
 class TestDagConfig(unittest.TestCase):
 
     def test_define(self):
