@@ -2,10 +2,6 @@ class ProcessorFailed(Exception):
     pass
 
 
-class ProcessorNeedsHuman(Exception):
-    pass
-
-
 class Processor(object):
     '''
     Base class for data processors.

@@ -1,3 +1,3 @@
-from tarr.processor import ProcessorFailed, ProcessorNeedsHuman, branch, rule
+from tarr.processor import ProcessorFailed, branch, rule
 
-__all__ = ['ProcessorFailed', 'ProcessorNeedsHuman', 'branch', 'rule']
+__all__ = ['ProcessorFailed', 'branch', 'rule']

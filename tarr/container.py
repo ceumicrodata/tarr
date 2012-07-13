@@ -1,12 +1,12 @@
 import tarr.dag
-from tarr.processor import ProcessorFailed, ProcessorNeedsHuman
+from tarr.processor import ProcessorFailed
 from zope.dottedname.resolve import resolve as dottedname_resolve
 import traceback
 
 
 class ProcessorContainer(tarr.dag.Node):
 
-    SUCCESS, FAILURE, NEED_HUMAN = range(3)
+    SUCCESS, FAILURE = range(2)
 
     status = None
     data = None
@@ -23,8 +23,6 @@ class ProcessorContainer(tarr.dag.Node):
             self.data.payload = self.processor.process(data.payload)
         except ProcessorFailed:
             self.status = self.FAILURE
-        except ProcessorNeedsHuman:
-            self.status = self.NEED_HUMAN
         except Exception as e:
             self.status = self.FAILURE
             print traceback.format_exc(e)

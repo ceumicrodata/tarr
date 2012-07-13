@@ -2,19 +2,16 @@
 A restricted DAG, where each node can have only 3 output edges:
     S: for success
     F: for failure
-    H: for human input (override default behavior of putting the data on hold until a human processes it)
-
 
 Node definitions syntax:
     :nodename(nodeimpl) [{O[O[O]]:nodename-o1 [O[O[O]]:nodename-o2 [...]]}]
 
 where
- O is either S, F or H,
+ O is either S or F,
  nodename-oN is either some not-yet defined nodename or the special nodename STOP.
 
 The output definitions are optional, if missing
   S: and F: defaults to next node defined
-  H: for asking for human assistance on the data and re-running the node
 '''
 
 import itertools
@@ -31,7 +28,6 @@ class Node(object):
     # they contain node names or None for STOP:
     nn_success = None
     nn_fail = None
-    nn_human = None
 
     def to_dot(self):
         '''Create DOT output - see GraphViz'''
@@ -53,9 +49,8 @@ class Node(object):
 
         addlabel(self.nn_success, 'S')
         addlabel(self.nn_fail, 'F')
-        addlabel(self.nn_human, 'H')
 
-        if self.nn_success and self.nn_success == self.nn_fail and self.nn_human is None:
+        if self.nn_success and self.nn_success == self.nn_fail:
             return '{0} -> {1}'.format(self.name, self.nn_success)
 
         return ' '.join(
@@ -150,17 +145,16 @@ class DagConfigReader(object):
 
         if label == 'S':
             node.nn_success = destnodename
-        elif label == 'F':
+        else:
+            assert label == 'F'
             node.nn_fail = destnodename
-        elif label == 'H':
-            node.nn_human = destnodename
 
     def from_string(self, string):
         # Grammar for config:
         wordchars = alphanums + '_'
         nodename = Word(wordchars)
         nodeimpl = Word(wordchars + '.')
-        outputlabel = Or([Literal('S'), Literal('F'), Literal('H')])
+        outputlabel = Or([Literal('S'), Literal('F')])
         output_edgedef = OneOrMore(outputlabel) + Literal('->') + nodename
         output_edgedefs = ZeroOrMore(output_edgedef)
         nodedef = nodename + Literal(':') + nodeimpl + Optional(output_edgedefs)

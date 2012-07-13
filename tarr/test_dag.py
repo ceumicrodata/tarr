@@ -7,10 +7,9 @@ from tarr import ProcessorFailed
 TEST_GOOD_CONFIG = '''
 node1 : impl
     F -> node_fail
-    H -> node_fail
 
 node_success : impl_success
-    SH -> STOP
+    S -> STOP
 
 node_fail : impl_fail
 '''
@@ -53,14 +52,14 @@ class DagConfigReader(m.DagConfigReader):
 class TestNode_to_dot(unittest.TestCase):
 
     # -> STOP: missing edge
-    # S, F same, H is STOP: no label
+    # S, F same: no label
 
     def test_all_undefined(self):
         n = m.Node()
         n.name = 'a_node'
         self.assertEqual('', n.to_dot())
 
-    def test_SF_same_H_undefined(self):
+    def test_SF_same(self):
         n = m.Node()
         n.name = 'a_node'
         n.nn_success = n.nn_fail = 'next'
@@ -73,20 +72,17 @@ class TestNode_to_dot(unittest.TestCase):
         n.nn_fail = 'f_node'
         self.assertEqual('a_node -> b_node [label=S] a_node -> f_node [label=F]', n.to_dot())
 
-    def test_SF_same_H_defined(self):
+    def test_only_S(self):
         n = m.Node()
         n.name = 'a_node'
         n.nn_success = 'b_node'
-        n.nn_fail = 'b_node'
-        n.nn_human = 'c_node'
-        self.assertEqual('a_node -> b_node [label=SF] a_node -> c_node [label=H]', n.to_dot())
+        self.assertEqual('a_node -> b_node [label=S]', n.to_dot())
 
-    def test_FH_multi_output(self):
+    def test_only_F(self):
         n = m.Node()
         n.name = 'a_node'
         n.nn_fail = 'b_node'
-        n.nn_human = 'b_node'
-        self.assertEqual('a_node -> b_node [label=FH]', n.to_dot())
+        self.assertEqual('a_node -> b_node [label=F]', n.to_dot())
 
 
 class TestDag_to_dot(unittest.TestCase):
@@ -173,18 +169,15 @@ class TestDagConfig(unittest.TestCase):
 
         self.assertEqual('impl', node1.impl)
         self.assertEqual('node_success', node1.nn_success)
-        self.assertEqual('node_fail', node1.nn_human)
         self.assertEqual('node_fail', node1.nn_fail)
 
         self.assertEqual('impl_success', node_success.impl)
         self.assertEqual(None, node_success.nn_success)
-        self.assertEqual(None, node_success.nn_human)
         self.assertEqual('node_fail', node_success.nn_fail)
 
         self.assertEqual('impl_fail', node_fail.impl)
         self.assertEqual(None, node_fail.nn_success)
         self.assertEqual(None, node_fail.nn_fail)
-        self.assertEqual(None, node_fail.nn_human)
 
     def assert_from_string_fails(self, config, *messages):
         reader = DagConfigReader()

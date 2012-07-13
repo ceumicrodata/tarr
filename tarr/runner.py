@@ -37,10 +37,8 @@ class Runner(object):
             data = processor.data
             if processor.status == processor.SUCCESS:
                 next_processor_name = processor.nn_success
-            elif processor.status == processor.FAILURE:
-                next_processor_name = processor.nn_fail
             else:
-                next_processor_name = processor.nn_human
+                next_processor_name = processor.nn_fail
 
             if next_processor_name:
                 processor = self.dag.node_by_name(next_processor_name)
