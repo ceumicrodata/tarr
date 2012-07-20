@@ -1,0 +1,110 @@
+from tarr.db import Job, Batch
+from tarr.runner import Runner
+
+import pkg_resources
+import hashlib
+
+
+class Application:
+    ''' Facade of operations of batch data processing using DAG of processors.
+
+    This class is intended to be subclassed for defining the concrete operations.
+
+    Batch: amount of data that can be kept in memory at once for processing.
+    Job: collection of Batches, also defines the data source
+
+    '''
+
+    session = None
+
+    dag_runner = None
+    job = None
+    batch = None
+
+    def create_job(self, dag_config, source, partitioning_name, description):
+        self.job = Job()
+
+        cls = self.__class__
+        self.job.application = '{0}.{1}'.format(cls.__module__, cls.__name__)
+
+        self.job.dag_config = dag_config
+        self.job.dag_config_hash = self.dag_config_hash()
+        self.job.source = source
+        self.job.partitioning_name = partitioning_name
+        self.job.description = description
+
+        self.session.add(self.job)
+
+        self.create_batches()
+
+        self.session.commit()
+
+    def dag_config_file(self):
+        ''' .job.dag_config -> file name '''
+
+        return pkg_resources.resource_filename(self.__class__.__module__, self.job.dag_config)
+
+    def dag_config_content(self):
+        with open(self.dag_config_file()) as f:
+            return f.read()
+
+    def dag_config_hash(self):
+        hash = hashlib.sha1()
+        hash.update(self.dag_config_content())
+        return hash.hexdigest()
+
+    def create_batches(self):
+        '''Create batch objects for the current job
+
+        As batches are data source specific there is no default implementation
+        '''
+
+        pass
+
+    def process_job(self):
+        pass
+
+    def process_batch(self):
+        pass
+
+    def load_data_items(self):
+        '''(Job, Batch) -> list of data items
+
+        The output should be [tarr.data.Data], i.e. the items must at least contain:
+            an id:     constant identifier of the data
+            a payload: the real data with or without identifiers, all of them can be potentially modified when processed
+        they can contain any more contextual information if needed
+        '''
+
+        pass
+
+    def save_data_items(self, data_items):
+        '''Extract output from data items and store them.
+
+        data_items are like those of returned by load_data_items()
+        '''
+
+        pass
+
+    # ???: def create_exception(self, data_item)
+    # ???: def process_exception(self, data_item_id)
+
+    def store_batch_statistics(self):
+        pass
+
+    def delete_job(self):
+        pass
+
+    def delete_batch(self):
+        pass
+
+    @property
+    def dag(self):
+        '''Data processing logic in the format of Directed Acyclic Graph of Processors'''
+
+        return self.dag_runner.dag
+
+    def load_dag(self):
+        '''Loads the job's DAG - the data processing logic'''
+
+        self.dag_runner = Runner(self.dag_config_content())
