@@ -59,7 +59,6 @@ class Test_create_job(unittest.TestCase):
 
     def test_added_to_session(self):
         app = make_app()
-        app.session.add = mock.Mock()
 
         app.create_job(dag_config='', source='', partitioning_name='', description='')
 
@@ -82,7 +81,6 @@ class Test_create_job(unittest.TestCase):
 
     def test_parameters_stored(self):
         app = make_app()
-        app.dag_config_hash = mock.Mock(app.dag_config_hash)
 
         ms = mock.sentinel
         app.create_job(dag_config=ms.dag_config, source=ms.source, partitioning_name=ms.partitioning_name, description=ms.description)
@@ -184,12 +182,14 @@ class Test_process_batch(unittest.TestCase):
 
     def test_load_data_items_called_once(self):
         app = self.mock_app()
+
         app.process_batch()
 
         app.load_data_items.assert_called_once_with()
 
     def test_process_data_item_called(self):
         app = self.mock_app()
+
         app.process_batch()
 
         self.assertTrue(app.process_data_item.called)
@@ -198,6 +198,7 @@ class Test_process_batch(unittest.TestCase):
 
     def test_save_data_items_called_once(self):
         app = self.mock_app()
+
         app.process_batch()
 
         app.save_data_items.assert_called_once_with(
@@ -206,12 +207,14 @@ class Test_process_batch(unittest.TestCase):
 
     def test_store_batch_statistics_called_once(self):
         app = self.mock_app()
+
         app.process_batch()
 
         app.store_batch_statistics.assert_called_once_with()
 
     def test_batch_is_completed(self):
         app = self.mock_app()
+
         app.process_batch()
 
         self.assertTrue(app.batch.is_processed)
