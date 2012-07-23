@@ -236,3 +236,17 @@ class Test_process_batch(unittest.TestCase):
         app.process_batch()
 
         app.session.commit.assert_called_once_with()
+
+
+class Test_process_data_item(unittest.TestCase):
+
+    def test(self):
+        app = make_app()
+        self.assertIsNone(app.dag_runner)
+        app.dag_runner = mock.Mock(m.Runner)
+        app.dag_runner.process = mock.Mock(m.Runner.process, side_effect=lambda data_item: mock.sentinel.processed)
+
+        output = app.process_data_item(1)
+
+        app.dag_runner.process.assert_called_once_with(1)
+        self.assertEqual(mock.sentinel.processed, output)

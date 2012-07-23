@@ -92,7 +92,7 @@ class Application:
 
     def process_data_item(self, data_item):
         '''Processes a single data item'''
-        pass
+        return self.dag_runner.process(data_item)
 
     def save_data_items(self, data_items):
         '''Extract output from data items and store them.
