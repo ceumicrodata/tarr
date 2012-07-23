@@ -47,10 +47,15 @@ class Batch(Base):
     job_id = Column(sa.Integer, sa.ForeignKey('job.job_id'))
     job = sa.orm.relationship('Job', back_populates='batches')
     source = Column(sa.String) # complex partition_id as string
+
     time_completed = Column(sa.DateTime)
     dag_config_hash = Column(sa.String)
     # dagstat_id = Column(sa.Integer, sa.ForeignKey('dagstat.dagstat_id'))
     # dagstat = sa.orm.relationship('DagStatistic')
+
+    @property
+    def is_processed(self):
+        return self.time_completed is not None
 
 
 # Job.source and Batch.source together specify the input data

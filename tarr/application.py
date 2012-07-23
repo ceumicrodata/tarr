@@ -62,7 +62,9 @@ class Application:
         pass
 
     def process_job(self):
-        pass
+        for self.batch in self.job.batches:
+            if not self.batch.is_processed:
+                self.process_batch()
 
     def process_batch(self):
         pass

@@ -1,13 +1,30 @@
 import unittest
 import mock
 import tarr.application as m # odule
-
+import tarr.db
+from datetime import datetime
 
 def make_app(cls=m.Application):
     app = cls()
     app.session = mock.Mock()
     app.dag_config_hash = mock.Mock(app.dag_config_hash, return_value=mock.sentinel.dag_config_hash)
     return app
+
+
+def create_job(app, dag_config='', source='', partitioning_name='', description=''):
+    app.create_job(dag_config=dag_config, source=source, partitioning_name=partitioning_name, description=description)
+
+
+def uncompleted_batch(source):
+    batch = tarr.db.Batch()
+    batch.source = source
+    return batch
+
+def completed_batch(source, time_completed=mock.sentinel.time_completed, dag_config_hash=mock.sentinel.dag_config_hash):
+    batch = uncompleted_batch(source=source)
+    batch.time_completed = time_completed
+    batch.dag_config_hash = dag_config_hash
+    return batch
 
 
 class Bpplication(m.Application):
@@ -111,3 +128,23 @@ class Test_load_dag(unittest.TestCase):
         app.load_dag()
 
         self.assertIsNotNone(app.dag.node_by_name('id'))
+
+
+class Test_process_job(unittest.TestCase):
+
+    def test(self):
+        processed_batches = []
+        class Application(m.Application):
+            def process_batch(self):
+                processed_batches.append(self.batch.source)
+
+        app = make_app(cls=Application)
+        create_job(app)
+
+        app.job.batches.append(uncompleted_batch(source='1'))
+        app.job.batches.append(completed_batch(source='2'))
+        app.job.batches.append(uncompleted_batch(source='3'))
+
+        app.process_job()
+
+        self.assertEqual(['1', '3'], processed_batches)
