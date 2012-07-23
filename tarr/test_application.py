@@ -4,6 +4,7 @@ import tarr.application as m # odule
 import tarr.db
 from datetime import datetime
 
+
 def make_app(cls=m.Application):
     app = cls()
     app.session = mock.Mock()
@@ -148,3 +149,90 @@ class Test_process_job(unittest.TestCase):
         app.process_job()
 
         self.assertEqual(['1', '3'], processed_batches)
+
+
+class Test_process_batch(unittest.TestCase):
+
+    def mock_app(self):
+        cls = m.Application
+        app = make_app(cls=cls)
+        create_job(app)
+        batch = uncompleted_batch(source='1')
+        app.job.batches.append(batch)
+        app.batch = batch
+
+        app.load_data_items = mock.Mock(
+            cls.load_data_items,
+            side_effect=lambda: [app.batch.source, app.batch.source * 2])
+
+        app.process_data_item = mock.Mock(
+            cls.process_data_item,
+            side_effect=lambda data_item: [
+                mock.sentinel.processed_data_item1,
+                mock.sentinel.processed_data_item2
+                ][len(data_item)-1])
+
+        app.save_data_items = mock.Mock(
+            cls.load_data_items,
+            side_effect=lambda data_items: None)
+
+        app.store_batch_statistics = mock.Mock(
+            cls.store_batch_statistics)
+
+        return app
+
+    def test_load_data_items_called_once(self):
+        app = self.mock_app()
+        app.process_batch()
+
+        app.load_data_items.assert_called_once_with()
+
+    def test_process_data_item_called(self):
+        app = self.mock_app()
+        app.process_batch()
+
+        self.assertTrue(app.process_data_item.called)
+        self.assertEqual(2, app.process_data_item.call_count)
+        app.process_data_item.assert_called_with('11')
+
+    def test_save_data_items_called_once(self):
+        app = self.mock_app()
+        app.process_batch()
+
+        app.save_data_items.assert_called_once_with(
+            [mock.sentinel.processed_data_item1,
+            mock.sentinel.processed_data_item2])
+
+    def test_store_batch_statistics_called_once(self):
+        app = self.mock_app()
+        app.process_batch()
+
+        app.store_batch_statistics.assert_called_once_with()
+
+    def test_batch_is_completed(self):
+        app = self.mock_app()
+        app.process_batch()
+
+        self.assertTrue(app.batch.is_processed)
+
+    def test_config_hash_stored(self):
+        app = self.mock_app()
+        app.process_batch()
+
+        self.assertEqual(mock.sentinel.dag_config_hash, app.batch.dag_config_hash)
+
+    def test_time_completed_set(self):
+        app = self.mock_app()
+
+        time_before = datetime.now()
+        app.process_batch()
+        time_after = datetime.now()
+
+        self.assertTrue(time_before <= app.batch.time_completed <= time_after)
+
+    def test_commit_called_once(self):
+        app = self.mock_app()
+        app.session.commit = mock.Mock()
+        app.process_batch()
+
+        app.session.commit.assert_called_once_with()

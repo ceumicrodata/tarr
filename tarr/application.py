@@ -3,6 +3,7 @@ from tarr.runner import Runner
 
 import pkg_resources
 import hashlib
+from datetime import datetime
 
 
 class Application:
@@ -67,7 +68,16 @@ class Application:
                 self.process_batch()
 
     def process_batch(self):
-        pass
+        data_items = self.load_data_items()
+        processed_data_items = [self.process_data_item(item) for item in data_items]
+        self.save_data_items(processed_data_items)
+
+        self.batch.time_completed = datetime.now()
+        self.batch.dag_config_hash = self.dag_config_hash()
+
+        self.store_batch_statistics()
+
+        self.session.commit()
 
     def load_data_items(self):
         '''(Job, Batch) -> list of data items
@@ -78,6 +88,10 @@ class Application:
         they can contain any more contextual information if needed
         '''
 
+        pass
+
+    def process_data_item(self, data_item):
+        '''Processes a single data item'''
         pass
 
     def save_data_items(self, data_items):
