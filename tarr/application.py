@@ -102,17 +102,20 @@ class Application:
 
         pass
 
-    # ???: def create_exception(self, data_item)
-    # ???: def process_exception(self, data_item_id)
-
     def store_batch_statistics(self):
         pass
 
     def delete_job(self):
-        pass
+        for self.batch in self.job.batches:
+            self.delete_batch()
+
+        self.session.delete(self.job)
+        self.session.commit()
+        self.job = None
 
     def delete_batch(self):
-        pass
+        self.session.delete(self.batch)
+        self.batch = None
 
     @property
     def dag(self):

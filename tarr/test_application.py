@@ -14,6 +14,7 @@ def make_app(cls=m.Application):
 
 def create_job(app, dag_config='', source='', partitioning_name='', description=''):
     app.create_job(dag_config=dag_config, source=source, partitioning_name=partitioning_name, description=description)
+    app.session.commit.reset_mock()
 
 
 def uncompleted_batch(source):
@@ -233,6 +234,7 @@ class Test_process_batch(unittest.TestCase):
     def test_commit_called_once(self):
         app = self.mock_app()
         app.session.commit = mock.Mock()
+
         app.process_batch()
 
         app.session.commit.assert_called_once_with()
@@ -246,7 +248,86 @@ class Test_process_data_item(unittest.TestCase):
         app.dag_runner = mock.Mock(m.Runner)
         app.dag_runner.process = mock.Mock(m.Runner.process, side_effect=lambda data_item: mock.sentinel.processed)
 
-        output = app.process_data_item(1)
+        output = app.process_data_item(mock.sentinel.input)
 
-        app.dag_runner.process.assert_called_once_with(1)
+        app.dag_runner.process.assert_called_once_with(mock.sentinel.input)
         self.assertEqual(mock.sentinel.processed, output)
+
+
+class DeleteJobFixture:
+
+    app = None
+    batch_1 = None
+    batch_2 = None
+
+    def __init__(self):
+        self.app = make_app()
+        create_job(self.app)
+        self.batch_1 = uncompleted_batch(source=mock.sentinel.batch_1)
+        self.batch_2 = completed_batch(source=mock.sentinel.batch_2)
+        self.app.job.batches.append(self.batch_1)
+        self.app.job.batches.append(self.batch_2)
+
+
+class Test_delete_job(unittest.TestCase):
+
+    def test_delete_batch_called(self):
+        f = DeleteJobFixture()
+        # collect app.batch.sources when delete_batch is called
+        delete_batch_sources = []
+        def record_app_batch_source():
+            delete_batch_sources.append(f.app.batch.source)
+        f.app.delete_batch = mock.Mock(f.app.delete_batch, side_effect=record_app_batch_source)
+
+        f.app.delete_job()
+
+        self.assertEqual([mock.sentinel.batch_1, mock.sentinel.batch_2], delete_batch_sources)
+
+    def test_job_removed_from_session(self):
+        f = DeleteJobFixture()
+        job = f.app.job
+        f.app.delete_batch = mock.Mock(f.app.delete_batch)
+
+        f.app.delete_job()
+
+        f.app.session.delete.assert_called_once_with(job)
+
+    def test_changes_committed(self):
+        f = DeleteJobFixture()
+
+        f.app.delete_job()
+
+        f.app.session.commit.assert_called_once_with()
+
+    def test_job_is_set_to_None(self):
+        f = DeleteJobFixture()
+
+        f.app.delete_job()
+
+        self.assertIsNone(f.app.job)
+
+
+class DeleteBatchFixture:
+
+    app = None
+    batch = None
+
+    def __init__(self):
+        self.app = make_app()
+        self.batch = uncompleted_batch(source=mock.sentinel.batch)
+        self.app.batch = self.batch
+
+
+class Test_delete_batch(unittest.TestCase):
+
+    def test_batch_removed_from_session(self):
+        f = DeleteBatchFixture()
+        f.app.delete_batch()
+
+        f.app.session.delete.assert_called_once_with(f.batch)
+
+    def test_batch_is_set_to_None(self):
+        f = DeleteBatchFixture()
+        f.app.delete_batch()
+
+        self.assertIsNone(f.app.batch)
