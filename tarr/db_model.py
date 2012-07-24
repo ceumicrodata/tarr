@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+import sqlalchemy.orm
 from sqlalchemy.ext.declarative import declarative_base, Column
 from zope.dottedname.resolve import resolve as dottedname_resolve
 
@@ -113,6 +114,7 @@ def ensure_schema(sqlalchemy_engine, schema):
         c.close()
 
 
+# FIXME: init is untested!
 def init(sqlalchemy_engine):
     '''
     Initialize TARR database objects
@@ -127,3 +129,10 @@ def init(sqlalchemy_engine):
     meta.create_all(sqlalchemy_engine, checkfirst=True)
 
     Session.configure(bind=sqlalchemy_engine)
+
+
+# FIXME: init_from is untested!
+def init_from(args):
+    connect_string = 'postgresql://{0.user}:{0.password}@{0.host}:{0.port}/{0.database}'.format(args)
+    engine = sqlalchemy.create_engine(connect_string)
+    init(engine)

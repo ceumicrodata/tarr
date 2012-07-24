@@ -1,7 +1,7 @@
 import unittest
 import mock
 import tarr.application as m # odule
-import tarr.db
+import tarr.db_model
 from datetime import datetime
 
 
@@ -18,7 +18,7 @@ def create_job(app, name='test', dag_config='', source='', partitioning_name='',
 
 
 def uncompleted_batch(source):
-    batch = tarr.db.Batch()
+    batch = tarr.db_model.Batch()
     batch.source = source
     return batch
 

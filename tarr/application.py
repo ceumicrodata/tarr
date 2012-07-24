@@ -1,4 +1,4 @@
-from tarr.db import Job
+from tarr.db_model import Job
 from tarr.runner import Runner
 
 import pkg_resources
