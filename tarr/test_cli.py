@@ -1,5 +1,6 @@
 import unittest
 import tarr.cli as m # odule
+from db.db_test import TestConnection, SqlTestCase
 
 
 class Test_parse_args(unittest.TestCase):
@@ -37,3 +38,14 @@ class Test_parse_args(unittest.TestCase):
 
         self.assertEqual('process_batch', args.command)
         self.assertEqual('batch_id', args.batch_id)
+
+
+class Test_command_create_job(SqlTestCase):
+
+    def test(self):
+        args_list = TestConnection().as_args_list() + 'create_job jobname --app=tarr.application.Application --dag=fixtures/test_dag_config --source=complex:rovat_13:pm'.split()
+
+        parsed_args = m.parse_args(args_list)
+        m.command_create_job(parsed_args)
+
+        self.assert_rows('SELECT job_name FROM tarr.job', [['job_name'], ['jobname']])

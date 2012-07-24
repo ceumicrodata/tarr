@@ -5,6 +5,7 @@ from zope.dottedname.resolve import resolve as dottedname_resolve
 
 
 Session = sa.orm.sessionmaker()
+_engine = None
 
 
 TARR_SCHEMA = 'tarr'
@@ -134,5 +135,14 @@ def init(sqlalchemy_engine):
 # FIXME: init_from is untested!
 def init_from(args):
     connect_string = 'postgresql://{0.user}:{0.password}@{0.host}:{0.port}/{0.database}'.format(args)
-    engine = sqlalchemy.create_engine(connect_string)
-    init(engine)
+
+    global _engine
+    _engine = sqlalchemy.create_engine(connect_string)
+    init(_engine)
+
+
+def shutdown():
+    global _engine
+    if _engine:
+        _engine.dispose()
+        _engine = None

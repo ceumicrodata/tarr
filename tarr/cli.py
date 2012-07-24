@@ -36,7 +36,6 @@ def parse_args(args=None):
     return parser.parse_args(args)
 
 
-# FIXME: command_create_job is untested!
 def command_create_job(args):
     app_class = dottedname_resolve(args.application)
     app = app_class()
@@ -50,6 +49,8 @@ def command_create_job(args):
         source=args.source,
         partitioning_name=args.partitioning_name,
         description=args.description)
+
+    db.shutdown()
 
 
 def main():
