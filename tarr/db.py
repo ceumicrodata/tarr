@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base, Column
+from zope.dottedname.resolve import resolve as dottedname_resolve
 
 
 Session = sa.orm.sessionmaker()
@@ -28,6 +29,13 @@ class Job(Base):
     # state (ongoing/finished?)
 
     batches = sa.orm.relationship('Batch', back_populates='job')
+
+    def get_application_instance(self):
+        cls = dottedname_resolve(self.application)
+        app = cls()
+        app.job = self
+        return app
+
 
 # application: a dotted name resolving to a tarr.application.Application that can process this job
 # dag_config: it is not the full dag_config, rather an identifier (dotted path)
