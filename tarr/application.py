@@ -22,8 +22,10 @@ class Application:
     job = None
     batch = None
 
-    def create_job(self, dag_config, source, partitioning_name, description):
+    def create_job(self, name, dag_config, source, partitioning_name, description):
         self.job = Job()
+
+        self.job.job_name = name
 
         cls = self.__class__
         self.job.application = '{0}.{1}'.format(cls.__module__, cls.__name__)

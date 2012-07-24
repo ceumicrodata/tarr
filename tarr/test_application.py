@@ -12,8 +12,8 @@ def make_app(cls=m.Application):
     return app
 
 
-def create_job(app, dag_config='', source='', partitioning_name='', description=''):
-    app.create_job(dag_config=dag_config, source=source, partitioning_name=partitioning_name, description=description)
+def create_job(app, name='test', dag_config='', source='', partitioning_name='', description=''):
+    app.create_job(name=name, dag_config=dag_config, source=source, partitioning_name=partitioning_name, description=description)
     app.session.commit.reset_mock()
 
 
@@ -36,31 +36,34 @@ class Bpplication(m.Application):
 
 class Test_create_job(unittest.TestCase):
 
+    def create_job(self, app, name='', dag_config='', source='', partitioning_name='', description=''):
+        app.create_job(name=name, dag_config=dag_config, source=source, partitioning_name=partitioning_name, description=description)
+
     def test_created(self):
         app = make_app()
 
-        app.create_job(dag_config='', source='', partitioning_name='', description='')
+        self.create_job(app)
 
         self.assertIsNotNone(app.job)
 
     def test_application(self):
         app = make_app()
 
-        app.create_job(dag_config='', source='', partitioning_name='', description='')
+        self.create_job(app)
 
         self.assertEqual('tarr.application.Application', app.job.application)
 
     def test_bpplication(self):
         app = make_app(cls=Bpplication)
 
-        app.create_job(dag_config='', source='', partitioning_name='', description='')
+        self.create_job(app)
 
         self.assertEqual('tarr.test_application.Bpplication', app.job.application)
 
     def test_added_to_session(self):
         app = make_app()
 
-        app.create_job(dag_config='', source='', partitioning_name='', description='')
+        self.create_job(app)
 
         app.session.add.assert_called_once_with(app.job)
 
@@ -68,14 +71,14 @@ class Test_create_job(unittest.TestCase):
         app = make_app()
         app.create_batches = mock.Mock()
 
-        app.create_job(dag_config='', source='', partitioning_name='', description='')
+        self.create_job(app)
 
         app.create_batches.assert_called_once_with()
 
     def test_changes_committed(self):
         app = make_app()
 
-        app.create_job(dag_config='', source='', partitioning_name='', description='')
+        self.create_job(app)
 
         app.session.commit.assert_called_once_with()
 
@@ -83,8 +86,9 @@ class Test_create_job(unittest.TestCase):
         app = make_app()
 
         ms = mock.sentinel
-        app.create_job(dag_config=ms.dag_config, source=ms.source, partitioning_name=ms.partitioning_name, description=ms.description)
+        app.create_job(name=ms.name, dag_config=ms.dag_config, source=ms.source, partitioning_name=ms.partitioning_name, description=ms.description)
 
+        self.assertEqual(ms.name, app.job.job_name)
         self.assertEqual(ms.dag_config, app.job.dag_config)
         self.assertEqual(ms.source, app.job.source)
         self.assertEqual(ms.partitioning_name, app.job.partitioning_name)
@@ -93,7 +97,7 @@ class Test_create_job(unittest.TestCase):
     def test_dag_config_hash_called_for_hash(self):
         app = make_app()
 
-        app.create_job(dag_config='tarr.test_dag_config_for_hash', source='', partitioning_name='', description='')
+        self.create_job(app, dag_config='tarr.test_dag_config_for_hash')
 
         self.assertEqual(mock.sentinel.dag_config_hash, app.job.dag_config_hash)
 
@@ -103,7 +107,7 @@ class Test_dag_config_file(unittest.TestCase):
     def test(self):
         app = make_app()
         dag_config = 'asd/x'
-        app.create_job(dag_config=dag_config, source='', partitioning_name='', description='')
+        app.create_job(name='', dag_config=dag_config, source='', partitioning_name='', description='')
 
         self.assertRegexpMatches(app.dag_config_file(), '/asd/x')
 

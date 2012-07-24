@@ -16,7 +16,7 @@ class Job(Base):
 
     __tablename__ = 'job'
 
-    job_id = Column(sa.Integer, primary_key=True, nullable=False)
+    job_name = Column(sa.String, primary_key=True, nullable=False)
     time_created = Column(sa.DateTime, server_default=sa.text('current_timestamp'))
     application = Column(sa.String, nullable=False)
     dag_config = Column(sa.String)
@@ -44,7 +44,7 @@ class Batch(Base):
     __tablename__ = 'batch'
 
     batch_id = Column(sa.Integer, primary_key=True, nullable=False)
-    job_id = Column(sa.Integer, sa.ForeignKey('job.job_id'))
+    job_name = Column(sa.String, sa.ForeignKey('job.job_name'))
     job = sa.orm.relationship('Job', back_populates='batches')
     source = Column(sa.String) # complex partition_id as string
 
