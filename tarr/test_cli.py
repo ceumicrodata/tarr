@@ -13,7 +13,7 @@ class Test_parse_args(unittest.TestCase):
             ).split()
             + ['--description=a description'])
 
-        self.assertEqual('create_job', args.command)
+        self.assertEqual(m.command_create_job, args.command)
         self.assertEqual('jobname', args.name)
         self.assertEqual('location.clean.Application', args.application)
         self.assertEqual('dag-config', args.dag_config)
@@ -24,19 +24,19 @@ class Test_parse_args(unittest.TestCase):
     def test_delete_job(self):
         args = m.parse_args('delete_job jobname'.split())
 
-        self.assertEqual('delete_job', args.command)
+        self.assertEqual(m.command_delete_job, args.command)
         self.assertEqual('jobname', args.name)
 
     def test_process_job(self):
         args = m.parse_args('process_job jobname'.split())
 
-        self.assertEqual('process_job', args.command)
+        self.assertEqual(m.command_process_job, args.command)
         self.assertEqual('jobname', args.name)
 
     def test_process_batch(self):
         args = m.parse_args('process_batch batch_id'.split())
 
-        self.assertEqual('process_batch', args.command)
+        self.assertEqual(m.command_process_batch, args.command)
         self.assertEqual('batch_id', args.batch_id)
 
 
