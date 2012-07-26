@@ -7,6 +7,7 @@ from zope.dottedname.resolve import resolve as dottedname_resolve
 class Cli(object):
 
     application = None
+    session = None
 
     def parse_args(self, args=None):
         parser = argparse.ArgumentParser(
@@ -42,17 +43,29 @@ class Cli(object):
     def get_application(self, application):
         app_class = dottedname_resolve(application)
         self.application = app_class()
+        self.application.session = self.session
+
+    def get_application_from_jobname(self, job_name):
+        job = self.session.query(db.Job).filter(db.Job.job_name==job_name).one()
+        self.application = job.get_application_instance()
+        self.application.session = self.session
+
+    def get_application_from_batchid(self, batch_id):
+        batch = self.session.query(db.Batch).filter(db.Batch.batch_id==batch_id).one()
+        self.application = batch.job.get_application_instance()
+        self.application.batch = batch
+        self.application.session = self.session
 
     def init_db(self, args):
         db.init_from(args)
-        self.application.session = db.Session()
+        self.session = db.Session()
 
     def shutdown(self):
         db.shutdown()
 
     def command_create_job(self, args):
-        self.get_application(args.application)
         self.init_db(args)
+        self.get_application(args.application)
 
         self.application.create_job(
             name=args.name,
@@ -64,13 +77,30 @@ class Cli(object):
         self.shutdown()
 
     def command_delete_job(self, args):
-        pass
+        self.init_db(args)
+        self.get_application_from_jobname(args.name)
+
+        self.application.delete_job()
+
+        self.shutdown()
 
     def command_process_job(self, args):
-        pass
+        self.init_db(args)
+        self.get_application_from_jobname(args.name)
+
+        self.application.load_dag()
+        self.application.process_job()
+
+        self.shutdown()
 
     def command_process_batch(self, args):
-        pass
+        self.init_db(args)
+        self.get_application_from_batchid(args.batch_id)
+
+        self.application.load_dag()
+        self.application.process_batch()
+
+        self.shutdown()
 
     def main(self, args=None):
         parsed_args = self.parse_args(args)
@@ -78,4 +108,4 @@ class Cli(object):
 
 
 if __name__ == '__main__':
-    Cli.main()
+    Cli().main()
