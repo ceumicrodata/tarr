@@ -1,12 +1,13 @@
 from tarr.db_model import Job
 from tarr.runner import Runner
 
-import pkg_resources
 import hashlib
 from datetime import datetime
 
+from lib.file import ResourceLocator # FIXME: ResourceLocator is external to tarr & it is only a temporary solution
 
-class Application:
+
+class Application(ResourceLocator):
     ''' Facade of operations of batch data processing using DAG of processors.
 
     This class is intended to be subclassed for defining the concrete operations.
@@ -45,7 +46,7 @@ class Application:
     def dag_config_file(self):
         ''' .job.dag_config -> file name '''
 
-        return pkg_resources.resource_filename(self.__class__.__module__, self.job.dag_config)
+        return self.relative_path(self.job.dag_config)
 
     def dag_config_content(self):
         with open(self.dag_config_file()) as f:
