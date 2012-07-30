@@ -38,6 +38,12 @@ class Job(Base):
         app.job = self
         return app
 
+    def create_batch(self, source):
+        batch = Batch()
+        batch.source = source
+        self.batches.append(batch)
+        return batch
+
 
 # application: a dotted name resolving to a tarr.application.Application that can process this job
 # dag_config: it is not the full dag_config, rather an identifier (dotted path)
