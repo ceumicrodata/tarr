@@ -73,9 +73,7 @@ class TestContainer_process(unittest.TestCase):
         self.assertEqual(28, processor_container.data.payload)
 
     def test_keeps_id_and_old_payload_on_failure(self):
-        def fail(data):
-            raise ProcessorFailed
-        processor_container = self.get_container_with_mock_processor_process(side_effect=fail)
+        processor_container = self.get_container_with_mock_processor_process(side_effect=ProcessorFailed)
 
         processor_container.process(Data(id=3, payload=14))
 
@@ -83,14 +81,44 @@ class TestContainer_process(unittest.TestCase):
         self.assertEqual(3, processor_container.data.id)
         self.assertEqual(14, processor_container.data.payload)
 
-    def test_after_fail_can_not_succeed(self):
-        def fail(data):
-            raise ProcessorFailed
-            return 99
-        processor_container = self.get_container_with_mock_processor_process(side_effect=fail)
+    # statistics
 
-        processor_container.process(Data(id=3, payload=14))
+    count_sentinel = -98
 
-        self.assertEqual(m.ProcessorContainer.FAILURE, processor_container.status)
-        self.assertEqual(3, processor_container.data.id)
-        self.assertEqual(14, processor_container.data.payload)
+    def test_process_increments_count(self):
+        processor_container = self.get_container_with_mock_processor_process()
+        processor_container.count = self.count_sentinel
+
+        processor_container.process(self.data)
+
+        self.assertEqual(self.count_sentinel + 1, processor_container.count)
+
+    def test_success_increments_success_count(self):
+        processor_container = self.get_container_with_mock_processor_process()
+        processor_container.success_count = self.count_sentinel
+
+        processor_container.process(self.data)
+
+        self.assertEqual(self.count_sentinel + 1, processor_container.success_count)
+
+    def test_failure_increments_failure_count(self):
+        processor_container = self.get_container_with_mock_processor_process(side_effect=ProcessorFailed)
+        processor_container.failure_count = self.count_sentinel
+
+        processor_container.process(self.data)
+
+        self.assertEqual(self.count_sentinel + 1, processor_container.failure_count)
+
+    def test_time_is_increased(self):
+        processor_container = self.get_container_with_mock_processor_process()
+        time_in_process = processor_container.time_in_process
+
+        processor_container.process(self.data)
+        time_in_process2 = processor_container.time_in_process
+
+        self.assertLess(time_in_process, time_in_process2)
+
+        processor_container.process(self.data)
+        time_in_process3 = processor_container.time_in_process
+
+        self.assertLess(time_in_process2, time_in_process3)
