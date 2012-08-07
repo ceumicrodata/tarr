@@ -80,6 +80,9 @@ class DAG(object):
                 ['}']))
 
 
+IMPLICIT_NEXT = object()
+
+
 class DagConfigReader(object):
 
     STOP_NODE_NAME = 'STOP'
@@ -90,7 +93,6 @@ class DagConfigReader(object):
     nodes = None
     futures = None
     nodenames = None
-    IMPLICIT_NEXT = object()
 
     def new_node(self):
         return Node()
@@ -114,8 +116,8 @@ class DagConfigReader(object):
         node = self.new_node()
         node.name = name
         node.impl = impl
-        node.nn_success = self.IMPLICIT_NEXT
-        node.nn_fail = self.IMPLICIT_NEXT
+        node.nn_success = IMPLICIT_NEXT
+        node.nn_fail = IMPLICIT_NEXT
 
         self.fix_implicit_edges_with(name)
         self.nodes.append(node)
@@ -128,9 +130,9 @@ class DagConfigReader(object):
             return
 
         node_to_fix = self.nodes[-1]
-        if node_to_fix.nn_success == self.IMPLICIT_NEXT:
+        if node_to_fix.nn_success == IMPLICIT_NEXT:
             node_to_fix.nn_success = nodename
-        if node_to_fix.nn_fail == self.IMPLICIT_NEXT:
+        if node_to_fix.nn_fail == IMPLICIT_NEXT:
             node_to_fix.nn_fail = nodename
 
     def add_edge(self, label, destnodename):
@@ -206,3 +208,90 @@ class DagConfigReader(object):
         nodename = toks[-1]
         outputlabels = toks[:-2]
         return [(outputlabel, nodename) for outputlabel in outputlabels]
+
+
+
+##############################################################################
+
+
+
+class PyDagConfigReader(object):
+
+    # nodes | futures
+    # edges can be created only from nodes to futures
+
+    nodes = None
+    futures = None
+    nodenames = None
+
+    def new_node(self):
+        return Node()
+
+    def new_dag(self):
+        return DAG()
+
+    def __init__(self):
+        self.nodes = []
+        self.futures = set()
+        self.nodenames = set()
+
+    @property
+    def nodecount(self):
+        return len(self.nodenames)
+
+    def define(self, name, impl):
+        if name in self.nodenames:
+            raise Exception('Duplicate definition of {0}'.format(name))
+
+        node = self.new_node()
+        node.name = name
+        node.impl = impl
+        node.nn_success = IMPLICIT_NEXT
+        node.nn_fail = IMPLICIT_NEXT
+
+        self.fix_implicit_edges_with(name)
+        self.nodes.append(node)
+        self.nodenames.add(name)
+        self.futures.discard(name)
+        return node
+
+    def fix_implicit_edges_with(self, nodename):
+        if not self.nodes:
+            return
+
+        node_to_fix = self.nodes[-1]
+        if node_to_fix.nn_success == IMPLICIT_NEXT:
+            node_to_fix.nn_success = nodename
+        if node_to_fix.nn_fail == IMPLICIT_NEXT:
+            node_to_fix.nn_fail = nodename
+
+    def add_futures(self, destnodename):
+        if destnodename in (IMPLICIT_NEXT, None):
+            return
+
+        if destnodename in self.nodenames:
+            raise Exception('{0} already defined, config is not monotone'.format(destnodename))
+
+        self.futures.add(destnodename)
+
+    def from_config(self, node_spec_list):
+        for node_spec in node_spec_list:
+            node = self.define(node_spec.name, node_spec.impl)
+
+            self.add_futures(node_spec.nn_success)
+            node.nn_success = node_spec.nn_success
+
+            self.add_futures(node_spec.nn_fail)
+            node.nn_fail = node_spec.nn_fail
+
+        # fix last node - all edges should be STOP
+        self.fix_implicit_edges_with(None)
+
+        if self.futures:
+            raise ParseFatalException('Undefined nodes: {0}'.format(self.futures))
+
+        dag = self.new_dag()
+        dag.name2node = dict((n.name, n) for n in self.nodes)
+        dag.start_node = self.nodes[0]
+
+        return dag
