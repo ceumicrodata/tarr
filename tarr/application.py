@@ -78,7 +78,7 @@ class Application(ResourceLocator):
         self.batch.time_completed = datetime.now()
         self.batch.dag_config_hash = self.dag_config_hash()
 
-        self.store_batch_statistics()
+        self.save_batch_statistics()
 
         self.session.commit()
 
@@ -105,8 +105,11 @@ class Application(ResourceLocator):
 
         pass
 
-    def store_batch_statistics(self):
-        pass
+    def save_batch_statistics(self):
+        self.batch.save_statistics(self.dag)
+
+    def merge_batch_statistics(self):
+        self.batch.merge_statistics_into(self.dag)
 
     def delete_job(self):
         for self.batch in self.job.batches:

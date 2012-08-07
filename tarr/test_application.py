@@ -2,7 +2,8 @@ import unittest
 import mock
 import tarr.application as m # odule
 import tarr.db_model
-from datetime import datetime
+from db import db_test
+from datetime import datetime, timedelta
 
 
 def make_app(cls=m.Application):
@@ -179,8 +180,8 @@ class Test_process_batch(unittest.TestCase):
             cls.load_data_items,
             side_effect=lambda data_items: None)
 
-        app.store_batch_statistics = mock.Mock(
-            cls.store_batch_statistics)
+        app.save_batch_statistics = mock.Mock(
+            cls.save_batch_statistics)
 
         return app
 
@@ -209,12 +210,12 @@ class Test_process_batch(unittest.TestCase):
             [mock.sentinel.processed_data_item1,
             mock.sentinel.processed_data_item2])
 
-    def test_store_batch_statistics_called_once(self):
+    def test_save_batch_statistics_called_once(self):
         app = self.mock_app()
 
         app.process_batch()
 
-        app.store_batch_statistics.assert_called_once_with()
+        app.save_batch_statistics.assert_called_once_with()
 
     def test_batch_is_completed(self):
         app = self.mock_app()
@@ -338,3 +339,95 @@ class Test_delete_batch(unittest.TestCase):
         f.app.delete_batch()
 
         self.assertIsNone(f.app.batch)
+
+
+class Test_statistics(db_test.SqlTestCase):
+
+    session = None
+
+    def setUp(self):
+        super(Test_statistics, self).setUp()
+        tarr.db_model.init_from(db_test.TestConnection)
+        self.session = tarr.db_model.Session()
+
+    def tearDown(self):
+        self.session.close()
+        self.session = None
+        tarr.db_model.shutdown()
+        super(Test_statistics, self).tearDown()
+
+    def make_app(self):
+        app = m.Application()
+        app.session = self.session
+
+        app.create_job('name', 'fixtures/test_dag_config', 'source', 'partitioning_name', 'description')
+        app.load_dag()
+        app.job.create_batch(source='1')
+        app.batch = app.job.batches[0]
+
+        # set statistics on nodes
+        self.node1, self.node2 = self.nodes(app)
+
+        self.node1.count = 10
+        self.node1.success_count = 1
+        self.node1.failure_count = 9
+        self.node1.time_in_process = timedelta(1, 1, 1)
+
+        self.node2.count = 20
+        self.node2.success_count = 9
+        self.node2.failure_count = 11
+        self.node2.time_in_process = timedelta(2, 2, 2)
+        return app
+
+    def nodes(self, app):
+        return app.dag.node_by_name('id'), app.dag.node_by_name('another_id')
+
+    def reload_app(self):
+        # forget in-memory statistics objects
+        self.session.flush()
+        self.session.expunge_all()
+
+        app = m.Application()
+        app.session = self.session
+        app.job = self.session.query(tarr.db_model.Job).one()
+        app.load_dag()
+        app.batch = app.job.batches[0]
+        return app
+
+    def test_persistence(self):
+        app = self.make_app()
+
+        app.save_batch_statistics()
+
+        # in a fresh app instance test loading statistics
+        app = self.reload_app()
+
+        app.merge_batch_statistics()
+
+        # check statistics on nodes
+        node1, node2 = self.nodes(app)
+        self.assertEqual(
+            ((10, 1, 9, timedelta(1, 1, 1)),
+                (20, 9, 11, timedelta(2, 2, 2))),
+            ((node1.count, node1.success_count, node1.failure_count, node1.time_in_process),
+                (node2.count, node2.success_count, node2.failure_count, node2.time_in_process)))
+
+    def test_merge_batch_statistics_is_additive(self):
+        app = self.make_app()
+
+        app.save_batch_statistics()
+
+        # in a fresh app instance test loading statistics
+        app = self.reload_app()
+
+        app.merge_batch_statistics()
+        # and again - should multiply previous results by 2!
+        app.merge_batch_statistics()
+
+        # check statistics on nodes
+        node1, node2 = self.nodes(app)
+        self.assertEqual(
+            ((20, 2, 18, timedelta(2, 2, 2)),
+                (40, 18, 22, timedelta(4, 4, 4))),
+            ((node1.count, node1.success_count, node1.failure_count, node1.time_in_process),
+                (node2.count, node2.success_count, node2.failure_count, node2.time_in_process)))
