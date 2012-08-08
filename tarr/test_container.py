@@ -87,11 +87,11 @@ class TestContainer_process(unittest.TestCase):
 
     def test_process_increments_count(self):
         processor_container = self.get_container_with_mock_processor_process()
-        processor_container.count = self.count_sentinel
+        processor_container.item_count = self.count_sentinel
 
         processor_container.process(self.data)
 
-        self.assertEqual(self.count_sentinel + 1, processor_container.count)
+        self.assertEqual(self.count_sentinel + 1, processor_container.item_count)
 
     def test_success_increments_success_count(self):
         processor_container = self.get_container_with_mock_processor_process()

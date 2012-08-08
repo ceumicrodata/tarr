@@ -15,7 +15,7 @@ class ProcessorContainer(tarr.dag.Node):
 
     success_count = 0
     failure_count = 0
-    count = 0 # FIXME: rename to item_count
+    item_count = 0
     time_in_process = timedelta() # FIXME: rename to run_time
 
     def initialize(self):
@@ -25,7 +25,7 @@ class ProcessorContainer(tarr.dag.Node):
     def process(self, data):
         self.status = self.SUCCESS
         self.data = data
-        self.count += 1
+        self.item_count += 1
         before = datetime.now()
 
         try:

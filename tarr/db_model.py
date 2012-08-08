@@ -78,7 +78,7 @@ class Batch(Base):
         for node in dag.nodes:
             nodestat = DagNodeStatistic()
             nodestat.node_name = node.name
-            nodestat.item_count = node.count
+            nodestat.item_count = node.item_count
             nodestat.success_count = node.success_count
             nodestat.failure_count = node.failure_count
             nodestat.run_time = node.time_in_process
@@ -88,7 +88,7 @@ class Batch(Base):
         for nodestat in self.dagstat.nodes:
             node = dag.node_by_name(nodestat.node_name)
             node.name = nodestat.node_name
-            node.count += nodestat.item_count
+            node.item_count += nodestat.item_count
             node.success_count += nodestat.success_count
             node.failure_count += nodestat.failure_count
             node.time_in_process += nodestat.run_time
