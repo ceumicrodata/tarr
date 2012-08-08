@@ -11,7 +11,6 @@ class Node(object):
     name = None
     impl = None
 
-    # only 3 outgoing edges supported:
     # they contain node names or None for STOP:
     nn_success = None
     nn_fail = None
