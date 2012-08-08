@@ -16,7 +16,7 @@ class ProcessorContainer(tarr.dag.Node):
     success_count = 0
     failure_count = 0
     item_count = 0
-    time_in_process = timedelta() # FIXME: rename to run_time
+    run_time = timedelta()
 
     def initialize(self):
         processor_class = dottedname_resolve(self.impl)
@@ -40,4 +40,4 @@ class ProcessorContainer(tarr.dag.Node):
             print traceback.format_exc(e)
 
         after = datetime.now()
-        self.time_in_process += after - before
+        self.run_time += after - before

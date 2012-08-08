@@ -81,7 +81,7 @@ class Batch(Base):
             nodestat.item_count = node.item_count
             nodestat.success_count = node.success_count
             nodestat.failure_count = node.failure_count
-            nodestat.run_time = node.time_in_process
+            nodestat.run_time = node.run_time
             self.dagstat.nodes.append(nodestat)
 
     def merge_statistics_into(self, dag):
@@ -91,7 +91,7 @@ class Batch(Base):
             node.item_count += nodestat.item_count
             node.success_count += nodestat.success_count
             node.failure_count += nodestat.failure_count
-            node.time_in_process += nodestat.run_time
+            node.run_time += nodestat.run_time
 
 
 # Job.source and Batch.source together specify the input data

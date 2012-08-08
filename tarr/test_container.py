@@ -111,14 +111,14 @@ class TestContainer_process(unittest.TestCase):
 
     def test_time_is_increased(self):
         processor_container = self.get_container_with_mock_processor_process()
-        time_in_process = processor_container.time_in_process
+        run_time = processor_container.run_time
 
         processor_container.process(self.data)
-        time_in_process2 = processor_container.time_in_process
+        run_time2 = processor_container.run_time
 
-        self.assertLess(time_in_process, time_in_process2)
+        self.assertLess(run_time, run_time2)
 
         processor_container.process(self.data)
-        time_in_process3 = processor_container.time_in_process
+        run_time3 = processor_container.run_time
 
-        self.assertLess(time_in_process2, time_in_process3)
+        self.assertLess(run_time2, run_time3)

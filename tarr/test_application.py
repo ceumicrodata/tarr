@@ -371,12 +371,12 @@ class Test_statistics(db_test.SqlTestCase):
         self.node1.item_count = 10
         self.node1.success_count = 1
         self.node1.failure_count = 9
-        self.node1.time_in_process = timedelta(1, 1, 1)
+        self.node1.run_time = timedelta(1, 1, 1)
 
         self.node2.item_count = 20
         self.node2.success_count = 9
         self.node2.failure_count = 11
-        self.node2.time_in_process = timedelta(2, 2, 2)
+        self.node2.run_time = timedelta(2, 2, 2)
         return app
 
     def nodes(self, app):
@@ -409,8 +409,8 @@ class Test_statistics(db_test.SqlTestCase):
         self.assertEqual(
             ((10, 1, 9, timedelta(1, 1, 1)),
                 (20, 9, 11, timedelta(2, 2, 2))),
-            ((node1.item_count, node1.success_count, node1.failure_count, node1.time_in_process),
-                (node2.item_count, node2.success_count, node2.failure_count, node2.time_in_process)))
+            ((node1.item_count, node1.success_count, node1.failure_count, node1.run_time),
+                (node2.item_count, node2.success_count, node2.failure_count, node2.run_time)))
 
     def test_merge_batch_statistics_is_additive(self):
         app = self.make_app()
@@ -429,5 +429,5 @@ class Test_statistics(db_test.SqlTestCase):
         self.assertEqual(
             ((20, 2, 18, timedelta(2, 2, 2)),
                 (40, 18, 22, timedelta(4, 4, 4))),
-            ((node1.item_count, node1.success_count, node1.failure_count, node1.time_in_process),
-                (node2.item_count, node2.success_count, node2.failure_count, node2.time_in_process)))
+            ((node1.item_count, node1.success_count, node1.failure_count, node1.run_time),
+                (node2.item_count, node2.success_count, node2.failure_count, node2.run_time)))
