@@ -75,6 +75,7 @@ class BranchingInstruction(ConditionalInstruction):
             self.instruction_on_yes = instruction
         if self.instruction_on_no is None:
             self.instruction_on_no = instruction
+
     def set_on_yes(self, instruction):
         self.instruction_on_yes = instruction
 
