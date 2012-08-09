@@ -4,7 +4,7 @@ from .compiler_base import (
     RETURN, RETURN_TRUE, RETURN_FALSE,
     define, do,
     DuplicateLabelError, UndefinedLabelError, BackwardReferenceError, FallOverOnDefineError, UnclosedProgramError,
-    compile)
+    Compiler)
 
 
 class Add1(Instruction):
@@ -41,6 +41,10 @@ class Noop(Instruction):
     pass
 
 Noop = Noop()
+
+
+def compile(program_spec):
+    return Compiler().compile(program_spec)
 
 
 class Test_Compiler(unittest.TestCase):
@@ -100,9 +104,9 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return_yes(self):
         prog = compile(
-            [do('odd?').on_no('even'),
-                    Add1, RETURN,
-                define('even'), RETURN,
+            [do('odd?').on_no('even'), Add1, RETURN,
+
+            define('even'), RETURN,
 
             define('odd?'),
                 IsOdd.on_no('odd?: no'),
@@ -128,22 +132,31 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(2, prog.run(2))
         self.assertEqual(4, prog.run(4))
 
+    # used in the next 2 tests
+    complex_prog_spec = [
+        do('even?').on_no('odd'), RETURN,
+
+        define('odd'), Add1, RETURN,
+
+        define('even?'),
+            do('odd?').on_no('even? even'),
+                    RETURN_FALSE,
+                define('even? even'), RETURN_TRUE,
+
+        define('odd?'),
+            IsOdd, RETURN,
+    ]
+
     def test_macro_return(self):
-        prog = compile(
-            [do('even?').on_no('odd'), RETURN,
-
-            define('odd'), Add1, RETURN,
-
-            define('even?'),
-                do('odd?').on_no('even? even'),
-                        RETURN_FALSE,
-                    define('even? even'), RETURN_TRUE,
-
-            define('odd?'),
-                IsOdd, RETURN,
-                ])
+        prog = compile(self.complex_prog_spec)
 
         self.assertEqual(2, prog.run(1))
         self.assertEqual(2, prog.run(2))
         self.assertEqual(4, prog.run(3))
         self.assertEqual(4, prog.run(4))
+
+    def test_instruction_index(self):
+        prog = compile(self.complex_prog_spec)
+
+        indices = [i.index for i in prog.instructions]
+        self.assertEqual(range(len(prog.instructions)), indices)

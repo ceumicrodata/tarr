@@ -22,6 +22,8 @@ class Compilable(object):
 
 class Instruction(Compilable):
 
+    index = None
+
     next_instruction = None
 
     def run(self, state):
@@ -201,10 +203,6 @@ class Program(Runnable):
         self.register_condition()
         self.register_runner(runner or Runner())
 
-    def set_runner(self, runner):
-        super(Program, self).set_runner(runner)
-        self.register_runner(runner)
-
     def register_runner(self, runner):
         self.runner = runner
         def noop(runner):
@@ -248,6 +246,9 @@ class Compiler(object):
         if self.would_fall_over:
             raise UnclosedProgramError
 
+        for i, instruction in enumerate(self.instructions):
+            instruction.index = i
+
         return Program(self.instructions)
 
     def add_instruction(self, instruction):
@@ -276,7 +277,3 @@ class Compiler(object):
             raise BackwardReferenceError
 
         self.fixes.setdefault(label, []).append(fix)
-
-
-def compile(program_spec):
-    return Compiler().compile(program_spec)
