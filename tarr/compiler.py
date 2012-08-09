@@ -135,23 +135,38 @@ def define(*labels):
     return Define(set(labels))
 
 
-class Runnable(object):
+class Runner(object):
 
-    def run(self, state):
-        self.condition.value = True
-        instruction = self.start_instruction
+    def run_instruction(self, instruction, state):
+        return instruction.run(state)
+
+    def run(self, start_instruction, condition, state):
+        condition.value = True
+        instruction = start_instruction
 
         while instruction:
-            state = instruction.run(state)
+            state = self.run_instruction(instruction, state)
             instruction = instruction.next_instruction
 
         return state
 
 
+class Runnable(object):
+
+    start_instruction = None
+    condition = None
+    runner = None
+
+    def register_runner(self, runner):
+        self.runner = runner
+
+    def run(self, state):
+        return self.runner.run(self.start_instruction, self.condition, state)
+
+
 class Call(Runnable, BranchingInstruction):
 
     label = None
-    start_instruction = None
 
     def __init__(self, label):
         self.label = label
@@ -178,16 +193,25 @@ class Condition(object):
 class Program(Runnable):
 
     instructions = None
-    condition = None
 
-    @property
-    def start_instruction(self):
-         return self.instructions[0]
-
-    def __init__(self, instructions):
+    def __init__(self, instructions, runner=None):
         self.instructions = instructions
+        self.start_instruction = instructions[0]
         self.condition = Condition()
         self.register_condition()
+        self.register_runner(runner or Runner())
+
+    def set_runner(self, runner):
+        super(Program, self).set_runner(runner)
+        self.register_runner(runner)
+
+    def register_runner(self, runner):
+        self.runner = runner
+        def noop(runner):
+            pass
+        for instruction in self.instructions:
+            register = getattr(instruction, 'register_runner', noop)
+            register(self.runner)
 
     def register_condition(self):
         def noop(condition):
@@ -370,9 +394,9 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return_no(self):
         prog = compile(
-            [do('odd?').on_no('even'),
-                    Add1, RETURN,
-                define('even'), RETURN,
+            [do('odd?').on_no('even'), Add1, RETURN,
+
+            define('even'), RETURN,
 
             define('odd?'),
                 IsOdd.on_no('odd?: no'),
@@ -385,9 +409,9 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return(self):
         prog = compile(
-            [do('even?').on_no('odd'),
-                    RETURN,
-                define('odd'), Add1, RETURN,
+            [do('even?').on_no('odd'), RETURN,
+
+            define('odd'), Add1, RETURN,
 
             define('even?'),
                 do('odd?').on_no('even? even'),
