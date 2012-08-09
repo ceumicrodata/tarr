@@ -28,7 +28,10 @@ class Instruction(Compilable):
         return state
 
     def compile(self, compiler):
-        compiler.add_instruction(self.__class__())
+        compiler.add_instruction(self.clone())
+
+    def clone(self):
+        return self.__class__()
 
 
 class ConditionalInstruction(Instruction):
@@ -56,13 +59,26 @@ class Return(ConditionalInstruction):
         pass
 
     def compile(self, compiler):
-        compiler.add_instruction(self.__class__(self.return_value))
+        super(Return, self).compile(compiler)
         compiler.would_fall_over = False
+
+    def clone(self):
+        return self.__class__(self.return_value)
 
 
 RETURN = Return()
 RETURN_TRUE = Return(return_value=True)
 RETURN_FALSE = Return(return_value=False)
+
+
+class Macro(Compilable):
+
+    def __init__(self, *instructions):
+        self.instructions = instructions
+
+    def compile(self, compiler):
+        for instruction in self.instructions:
+            instruction.compile(compiler)
 
 
 class BranchingInstruction(ConditionalInstruction):
@@ -85,6 +101,21 @@ class BranchingInstruction(ConditionalInstruction):
     def set_on_no(self, instruction):
         self.instruction_on_no = instruction
 
+    # compiler
+    def on_no(self, label):
+        return Macro(self, OnNo(label))
+
+
+class OnNo(Compilable):
+
+    label = None
+
+    def __init__(self, label):
+        self.label = label
+
+    def compile(self, compiler):
+        compiler.register_fix(self.label, compiler.last_instruction.set_on_no)
+
 
 class Define(Compilable):
 
@@ -103,22 +134,6 @@ class Define(Compilable):
 def define(*labels):
     return Define(set(labels))
 
-
-# FIXME: on_yes() should be removed, when_not() should be enough!
-class OnNo(Compilable):
-
-    label = None
-
-    def __init__(self, label):
-        self.label = label
-
-    def compile(self, compiler):
-        compiler.register_fix(self.label, compiler.last_instruction.set_on_no)
-
-def on_no(label):
-    return OnNo(label)
-
-when_not = on_no
 
 class Runnable(object):
 
@@ -142,12 +157,14 @@ class Call(Runnable, BranchingInstruction):
         self.label = label
 
     def compile(self, compiler):
-        instruction = self.__class__(self.label)
-        compiler.add_instruction(instruction)
-        compiler.register_fix(self.label, instruction.set_start_instruction)
+        super(Call, self).compile(compiler)
+        compiler.register_fix(self.label, compiler.last_instruction.set_start_instruction)
 
     def set_start_instruction(self, instruction):
         self.start_instruction = instruction
+
+    def clone(self):
+        return self.__class__(self.label)
 
 def do(label):
     return Call(label)
@@ -202,7 +219,7 @@ class Compiler(object):
             compilable.compile(self)
 
         if self.fixes or self.labels:
-            raise UndefinedLabelError
+            raise UndefinedLabelError(set(self.fixes.keys()).union(self.labels))
 
         if self.would_fall_over:
             raise UnclosedProgramError
@@ -313,17 +330,20 @@ class Test_Compiler(unittest.TestCase):
         self.assertRaises(BackwardReferenceError, compile, [RETURN, define('label'), Noop, do('label')])
 
     def test_branch_on_yes(self):
-        prog = compile([IsOdd, when_not('add2'), Add1, RETURN, define('add2'), Add1, Add1, RETURN])
+
+        prog = compile([IsOdd.on_no('add2'), Add1, RETURN, define('add2'), Add1, Add1, RETURN])
         self.assertEqual(4, prog.run(3))
         self.assertEqual(6, prog.run(4))
 
     def test_branch_on_no(self):
-        prog = compile([IsOdd, when_not('add1'), Add1, Add1, RETURN, define('add1'), Add1, RETURN])
+
+        prog = compile([IsOdd.on_no('add1'), Add1, Add1, RETURN, define('add1'), Add1, RETURN])
         self.assertEqual(5, prog.run(4))
         self.assertEqual(5, prog.run(3))
 
     def test_multiple_labels(self):
-        prog = compile([IsOdd, on_no('no'), do('yes'), RETURN, define('yes', 'no'), Add1, RETURN])
+
+        prog = compile([IsOdd.on_no('no'), do('yes'), RETURN, define('yes', 'no'), Add1, RETURN])
         self.assertEqual(4, prog.run(3))
         self.assertEqual(5, prog.run(4))
 
@@ -338,12 +358,16 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return_yes(self):
         prog = compile(
-            [do('odd?'), when_not('even'),
+
+            [do('odd?').on_no('even'),
+
                     Add1, RETURN,
                 define('even'), RETURN,
 
             define('odd?'),
-                IsOdd, when_not('odd?: no'),
+
+                IsOdd.on_no('odd?: no'),
+
                         RETURN_TRUE,
                     define('odd?: no'),
                         RETURN_FALSE])
@@ -353,12 +377,16 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return_no(self):
         prog = compile(
-            [do('odd?'), when_not('even'),
+
+            [do('odd?').on_no('even'),
+
                     Add1, RETURN,
                 define('even'), RETURN,
 
             define('odd?'),
-                IsOdd, when_not('odd?: no'),
+
+                IsOdd.on_no('odd?: no'),
+
                         RETURN_TRUE,
                     define('odd?: no'),
                         RETURN_FALSE])
@@ -368,12 +396,16 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return(self):
         prog = compile(
-            [do('even?'), when_not('odd'),
+
+            [do('even?').on_no('odd'),
+
                     RETURN,
                 define('odd'), Add1, RETURN,
 
             define('even?'),
-                do('odd?'), when_not('even? even'),
+
+                do('odd?').on_no('even? even'),
+
                         RETURN_FALSE,
                     define('even? even'), RETURN_TRUE,
 
