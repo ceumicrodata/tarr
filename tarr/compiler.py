@@ -7,6 +7,12 @@ class UndefinedLabelError(Exception):
 class BackwardReferenceError(Exception):
     pass
 
+class FallOverOnDefineError(Exception):
+    pass
+
+class UnclosedProgramError(Exception):
+    pass
+
 
 class Compilable(object):
 
@@ -51,6 +57,7 @@ class Return(ConditionalInstruction):
 
     def compile(self, compiler):
         compiler.add_instruction(self.__class__(self.return_value))
+        compiler.would_fall_over = False
 
 
 RETURN = Return()
@@ -83,51 +90,22 @@ class BranchingInstruction(ConditionalInstruction):
         self.instruction_on_no = instruction
 
 
-# FIXME: continue_at() should be removed
-class ContinueAt(Instruction):
+class Define(Compilable):
 
-    label = None
-    continue_at = None
+    labels = None
 
-    def __init__(self, label):
-        self.label = label
-
-    @property
-    def next_instruction(self):
-        return self.continue_at
-
-    @next_instruction.setter
-    def next_instruction(self, instruction):
-        pass
-
-    def run(self, state):
-        return state
+    def __init__(self, labels):
+        self.labels = labels
 
     def compile(self, compiler):
-        compiler.add_instruction(self)
-        compiler.register_fix(self.label, self.fix_label)
+        if compiler.would_fall_over:
+            raise FallOverOnDefineError
 
-    def fix_label(self, instruction):
-        self.continue_at = instruction
+        compiler.add_labels(self.labels)
+        compiler.would_fall_over = True
 
-
-def continue_at(label):
-    ''' = goto, should turn out to be unneeded, will be removed '''
-    return ContinueAt(label)
-
-
-class Label(Compilable):
-
-    label = None
-
-    def __init__(self, label):
-        self.label = label
-
-    def compile(self, compiler):
-        compiler.add_label(self.label)
-
-def define(label):
-    return Label(label)
+def define(*labels):
+    return Define(set(labels))
 
 
 # FIXME: on_yes() should be removed, when_not() should be enough!
@@ -167,7 +145,7 @@ class Runnable(object):
         return state
 
 
-class InsertMacro(Runnable, BranchingInstruction):
+class Call(Runnable, BranchingInstruction):
 
     label = None
     start_instruction = None
@@ -183,8 +161,8 @@ class InsertMacro(Runnable, BranchingInstruction):
     def set_start_instruction(self, instruction):
         self.start_instruction = instruction
 
-def insert(label):
-    return InsertMacro(label)
+def do(label):
+    return Call(label)
 
 
 class Condition(object):
@@ -220,6 +198,7 @@ class Compiler(object):
     previous_labels = None
     labels = None
     fixes = None
+    would_fall_over = True
 
     @property
     def last_instruction(self):
@@ -236,6 +215,9 @@ class Compiler(object):
 
         if self.fixes or self.labels:
             raise UndefinedLabelError
+
+        if self.would_fall_over:
+            raise UnclosedProgramError
 
         return Program(self.instructions)
 
@@ -254,11 +236,11 @@ class Compiler(object):
                 del self.fixes[label]
         self.labels = set()
 
-    def add_label(self, label):
-        if label in self.previous_labels:
+    def add_labels(self, labels):
+        if not labels.isdisjoint(self.previous_labels):
             raise DuplicateLabelError
 
-        self.labels.add(label)
+        self.labels = labels
 
     def register_fix(self, label, fix):
         if label in self.previous_labels:
@@ -314,54 +296,66 @@ Noop = Noop()
 class Test_Compiler(unittest.TestCase):
 
     def test_instruction_sequence(self):
-        prog = compile([Add1, Mul2])
+        prog = compile([Add1, Mul2, RETURN])
         self.assertEqual(8, prog.run(3))
 
     def test_condition_output1(self):
-        prog = compile([IsOdd])
+        prog = compile([IsOdd, RETURN])
         self.assertEqual(3, prog.run(3))
         self.assertTrue(prog.condition.value)
 
     def test_condition_output2(self):
-        prog = compile([IsOdd])
+        prog = compile([IsOdd, RETURN])
         self.assertEqual(4, prog.run(4))
         self.assertFalse(prog.condition.value)
 
-    def test_continue_at(self):
-        prog = compile([continue_at('q'), Die, define('q'), Add1])
-        self.assertEqual(5, prog.run(4))
-
     def test_duplicate_definition_of_label_is_not_compilable(self):
-        self.assertRaises(DuplicateLabelError, compile, [define('label'), Noop, define('label'), Noop])
+        self.assertRaises(DuplicateLabelError, compile, [RETURN, define('label'), Noop, RETURN, define('label'), Noop])
 
     def test_incomplete_program_is_not_compilable(self):
-        self.assertRaises(UndefinedLabelError, compile, [define('label'), Noop, define('label2')])
+        self.assertRaises(UndefinedLabelError, compile, [Noop, RETURN, define('label'), RETURN, define('label2')])
 
-    def test_backward_reference_prevents_compilation(self):
-        self.assertRaises(BackwardReferenceError, compile, [define('label'), Noop, continue_at('label')])
+    def test_incomplete_before_label_is_not_compilable(self):
+        self.assertRaises(FallOverOnDefineError, compile, [Noop, define('label'), Noop, RETURN])
+
+    def test_program_without_closing_return_is_not_compilable(self):
+        self.assertRaises(UnclosedProgramError, compile, [Noop])
+
+    def test_backward_reference_is_not_compilable(self):
+        self.assertRaises(BackwardReferenceError, compile, [RETURN, define('label'), Noop, do('label')])
 
     def test_branch_on_yes(self):
-        prog = compile([IsOdd, on_yes('just1'), Add1, define('just1'), Add1])
+        prog = compile([IsOdd, on_yes('just1'), Add1, Add1, RETURN, define('just1'), Add1, RETURN])
         self.assertEqual(4, prog.run(3))
         self.assertEqual(6, prog.run(4))
 
     def test_branch_on_no(self):
-        prog = compile([IsOdd, on_no('just1'), Add1, define('just1'), Add1])
+        prog = compile([IsOdd, on_no('just1'), Add1, Add1, RETURN, define('just1'), Add1, RETURN])
         self.assertEqual(5, prog.run(4))
         self.assertEqual(5, prog.run(3))
 
     def test_branch(self):
-        prog = compile([IsOdd, on_no('just1'), on_yes('just1'), Die, define('just1'), Add1])
+        prog = compile([IsOdd, on_no('just1'), on_yes('just1'), Die, RETURN, define('just1'), Add1, RETURN])
         self.assertEqual(4, prog.run(3))
         self.assertEqual(5, prog.run(4))
 
-    def test_insert(self):
-        prog = compile([insert('+1'), insert('+2'), define('+2'), Add1, define('+1'), Add1])
-        self.assertEqual(5, prog.run(0))
+    def test_multiple_labels(self):
+        prog = compile([IsOdd, on_no('no'), on_yes('yes'), Die, RETURN, define('yes', 'no'), Add1, RETURN])
+        self.assertEqual(4, prog.run(3))
+        self.assertEqual(5, prog.run(4))
+
+    def test_do(self):
+        prog = compile([
+            do('+1'), do('+2'), RETURN,
+
+            define('+2'), do('+1'), do('+1'), RETURN,
+            define('+1'), Add1, RETURN
+            ])
+        self.assertEqual(3, prog.run(0))
 
     def test_macro_return_yes(self):
         prog = compile(
-            [insert('odd?'), when_not('even'),
+            [do('odd?'), when_not('even'),
                     Add1, RETURN,
                 define('even'), RETURN,
 
@@ -376,7 +370,7 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return_no(self):
         prog = compile(
-            [insert('odd?'), when_not('even'),
+            [do('odd?'), when_not('even'),
                     Add1, RETURN,
                 define('even'), RETURN,
 
@@ -391,12 +385,12 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return(self):
         prog = compile(
-            [insert('even?'), when_not('odd'),
+            [do('even?'), when_not('odd'),
                     RETURN,
                 define('odd'), Add1, RETURN,
 
             define('even?'),
-                insert('odd?'), when_not('even? even'),
+                do('odd?'), when_not('even? even'),
                         RETURN_FALSE,
                     define('even? even'), RETURN_TRUE,
 
