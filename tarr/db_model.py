@@ -66,26 +66,26 @@ class Batch(Base):
 
     time_completed = Column(sa.DateTime)
     dag_config_hash = Column(sa.String)
-    dagstat_id = Column(sa.Integer, sa.ForeignKey('dagstat.dagstat_id'))
-    dagstat = sa.orm.relationship('DagStatistic')
+    runstat_id = Column(sa.Integer, sa.ForeignKey('runstat.runstat_id'))
+    runstat = sa.orm.relationship('RunStatistic')
 
     @property
     def is_processed(self):
         return self.time_completed is not None
 
     def save_statistics(self, dag):
-        self.dagstat = DagStatistic()
+        self.runstat = RunStatistic()
         for node in dag.nodes:
-            nodestat = DagNodeStatistic()
+            nodestat = NodeStatistic()
             nodestat.node_name = node.name
             nodestat.item_count = node.item_count
             nodestat.success_count = node.success_count
             nodestat.failure_count = node.failure_count
             nodestat.run_time = node.run_time
-            self.dagstat.nodes.append(nodestat)
+            self.runstat.nodes.append(nodestat)
 
     def merge_statistics_into(self, dag):
-        for nodestat in self.dagstat.nodes:
+        for nodestat in self.runstat.nodes:
             node = dag.node_by_name(nodestat.node_name)
             node.name = nodestat.node_name
             node.item_count += nodestat.item_count
@@ -100,26 +100,26 @@ class Batch(Base):
 # that change might be harmful, so it is worth knowing if it happened
 
 
-class DagStatistic(Base):
+class RunStatistic(Base):
 
-    __tablename__ = 'dagstat'
+    __tablename__ = 'runstat'
 
-    dagstat_id = Column(sa.Integer, primary_key=True, nullable=False)
+    runstat_id = Column(sa.Integer, primary_key=True, nullable=False)
 
     # item_count = Column(sa.Integer)
     # run_time = Column(sa.Interval)
 
-    nodes = sa.orm.relationship('DagNodeStatistic', back_populates='dagstat')
+    nodes = sa.orm.relationship('NodeStatistic', back_populates='runstat')
 
 
-class DagNodeStatistic(Base):
+class NodeStatistic(Base):
 
     __tablename__ = 'dagnodestat'
 
-    dagnodestat_id = Column(sa.Integer, primary_key=True, nullable=False)
+    nodestat_id = Column(sa.Integer, primary_key=True, nullable=False)
 
-    dagstat_id = Column(sa.Integer, sa.ForeignKey('dagstat.dagstat_id'))
-    dagstat = sa.orm.relationship('DagStatistic', back_populates='nodes')
+    runstat_id = Column(sa.Integer, sa.ForeignKey('runstat.runstat_id'))
+    runstat = sa.orm.relationship('RunStatistic', back_populates='nodes')
 
     node_name = Column(sa.String)
     item_count = Column(sa.Integer)
