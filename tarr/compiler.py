@@ -330,19 +330,16 @@ class Test_Compiler(unittest.TestCase):
         self.assertRaises(BackwardReferenceError, compile, [RETURN, define('label'), Noop, do('label')])
 
     def test_branch_on_yes(self):
-
         prog = compile([IsOdd.on_no('add2'), Add1, RETURN, define('add2'), Add1, Add1, RETURN])
         self.assertEqual(4, prog.run(3))
         self.assertEqual(6, prog.run(4))
 
     def test_branch_on_no(self):
-
         prog = compile([IsOdd.on_no('add1'), Add1, Add1, RETURN, define('add1'), Add1, RETURN])
         self.assertEqual(5, prog.run(4))
         self.assertEqual(5, prog.run(3))
 
     def test_multiple_labels(self):
-
         prog = compile([IsOdd.on_no('no'), do('yes'), RETURN, define('yes', 'no'), Add1, RETURN])
         self.assertEqual(4, prog.run(3))
         self.assertEqual(5, prog.run(4))
