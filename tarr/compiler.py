@@ -355,16 +355,12 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return_yes(self):
         prog = compile(
-
             [do('odd?').on_no('even'),
-
                     Add1, RETURN,
                 define('even'), RETURN,
 
             define('odd?'),
-
                 IsOdd.on_no('odd?: no'),
-
                         RETURN_TRUE,
                     define('odd?: no'),
                         RETURN_FALSE])
@@ -374,16 +370,12 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return_no(self):
         prog = compile(
-
             [do('odd?').on_no('even'),
-
                     Add1, RETURN,
                 define('even'), RETURN,
 
             define('odd?'),
-
                 IsOdd.on_no('odd?: no'),
-
                         RETURN_TRUE,
                     define('odd?: no'),
                         RETURN_FALSE])
@@ -393,16 +385,12 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return(self):
         prog = compile(
-
             [do('even?').on_no('odd'),
-
                     RETURN,
                 define('odd'), Add1, RETURN,
 
             define('even?'),
-
                 do('odd?').on_no('even? even'),
-
                         RETURN_FALSE,
                     define('even? even'), RETURN_TRUE,
 
