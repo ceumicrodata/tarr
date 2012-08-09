@@ -78,13 +78,9 @@ class BranchingInstruction(ConditionalInstruction):
 
     @next_instruction.setter
     def next_instruction(self, instruction):
-        if self.instruction_on_yes is None:
-            self.instruction_on_yes = instruction
+        self.instruction_on_yes = instruction
         if self.instruction_on_no is None:
             self.instruction_on_no = instruction
-
-    def set_on_yes(self, instruction):
-        self.instruction_on_yes = instruction
 
     def set_on_no(self, instruction):
         self.instruction_on_no = instruction
@@ -109,20 +105,12 @@ def define(*labels):
 
 
 # FIXME: on_yes() should be removed, when_not() should be enough!
-class OnYes(Compilable):
+class OnNo(Compilable):
 
     label = None
 
     def __init__(self, label):
         self.label = label
-
-    def compile(self, compiler):
-        compiler.register_fix(self.label, compiler.last_instruction.set_on_yes)
-
-def on_yes(label):
-    return OnYes(label)
-
-class OnNo(OnYes):
 
     def compile(self, compiler):
         compiler.register_fix(self.label, compiler.last_instruction.set_on_no)
@@ -325,22 +313,17 @@ class Test_Compiler(unittest.TestCase):
         self.assertRaises(BackwardReferenceError, compile, [RETURN, define('label'), Noop, do('label')])
 
     def test_branch_on_yes(self):
-        prog = compile([IsOdd, on_yes('just1'), Add1, Add1, RETURN, define('just1'), Add1, RETURN])
+        prog = compile([IsOdd, when_not('add2'), Add1, RETURN, define('add2'), Add1, Add1, RETURN])
         self.assertEqual(4, prog.run(3))
         self.assertEqual(6, prog.run(4))
 
     def test_branch_on_no(self):
-        prog = compile([IsOdd, on_no('just1'), Add1, Add1, RETURN, define('just1'), Add1, RETURN])
+        prog = compile([IsOdd, when_not('add1'), Add1, Add1, RETURN, define('add1'), Add1, RETURN])
         self.assertEqual(5, prog.run(4))
         self.assertEqual(5, prog.run(3))
 
-    def test_branch(self):
-        prog = compile([IsOdd, on_no('just1'), on_yes('just1'), Die, RETURN, define('just1'), Add1, RETURN])
-        self.assertEqual(4, prog.run(3))
-        self.assertEqual(5, prog.run(4))
-
     def test_multiple_labels(self):
-        prog = compile([IsOdd, on_no('no'), on_yes('yes'), Die, RETURN, define('yes', 'no'), Add1, RETURN])
+        prog = compile([IsOdd, on_no('no'), do('yes'), RETURN, define('yes', 'no'), Add1, RETURN])
         self.assertEqual(4, prog.run(3))
         self.assertEqual(5, prog.run(4))
 
@@ -360,10 +343,10 @@ class Test_Compiler(unittest.TestCase):
                 define('even'), RETURN,
 
             define('odd?'),
-                IsOdd, on_yes('odd?: yes'),
-                        RETURN_FALSE,
-                    define('odd?: yes'),
-                        RETURN_TRUE])
+                IsOdd, when_not('odd?: no'),
+                        RETURN_TRUE,
+                    define('odd?: no'),
+                        RETURN_FALSE])
 
         self.assertEqual(2, prog.run(1))
         self.assertEqual(4, prog.run(3))
@@ -375,10 +358,10 @@ class Test_Compiler(unittest.TestCase):
                 define('even'), RETURN,
 
             define('odd?'),
-                IsOdd, on_yes('odd?: yes'),
-                        RETURN_FALSE,
-                    define('odd?: yes'),
-                        RETURN_TRUE])
+                IsOdd, when_not('odd?: no'),
+                        RETURN_TRUE,
+                    define('odd?: no'),
+                        RETURN_FALSE])
 
         self.assertEqual(2, prog.run(2))
         self.assertEqual(4, prog.run(4))
