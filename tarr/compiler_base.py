@@ -52,9 +52,13 @@ class Return(ConditionalInstruction):
 
     @property
     def next_instruction(self):
+        return None
+
+    def run(self, state):
         if self.return_value is not None:
             self.condition.value = self.return_value
-        return None
+
+        return state
 
     @next_instruction.setter
     def next_instruction(self, instruction):
@@ -196,12 +200,11 @@ class Program(Runnable):
 
     instructions = None
 
-    def __init__(self, instructions, runner=None):
+    def __init__(self, instructions):
         self.instructions = instructions
         self.start_instruction = instructions[0]
         self.condition = Condition()
         self.register_condition()
-        self.register_runner(runner or Runner())
 
     def register_runner(self, runner):
         self.runner = runner

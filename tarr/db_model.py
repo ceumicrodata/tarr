@@ -2,6 +2,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm
 from sqlalchemy.ext.declarative import declarative_base, Column
 from zope.dottedname.resolve import resolve as dottedname_resolve
+from datetime import timedelta
 
 
 Session = sa.orm.sessionmaker()
@@ -126,6 +127,14 @@ class NodeStatistic(Base):
     success_count = Column(sa.Integer)
     failure_count = Column(sa.Integer)
     run_time = Column(sa.Interval)
+
+    def init(self, node_name):
+        self.node_name = node_name
+        self.item_count = 0
+        self.success_count = 0
+        self.failure_count = 0
+        self.run_time = timedelta()
+
 
 
 def ensure_schema(sqlalchemy_engine, schema):

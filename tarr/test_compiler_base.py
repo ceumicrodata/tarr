@@ -4,7 +4,7 @@ from .compiler_base import (
     RETURN, RETURN_TRUE, RETURN_FALSE,
     define, do,
     DuplicateLabelError, UndefinedLabelError, BackwardReferenceError, FallOverOnDefineError, UnclosedProgramError,
-    Compiler)
+    Compiler, Runner)
 
 
 class Add1(Instruction):
@@ -44,7 +44,9 @@ Noop = Noop()
 
 
 def compile(program_spec):
-    return Compiler().compile(program_spec)
+    program = Compiler().compile(program_spec)
+    program.register_runner(Runner())
+    return program
 
 
 class Test_Compiler(unittest.TestCase):
