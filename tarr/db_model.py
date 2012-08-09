@@ -77,22 +77,12 @@ class Batch(Base):
     def save_statistics(self, dag):
         self.runstat = RunStatistic()
         for node in dag.nodes:
-            nodestat = NodeStatistic()
-            nodestat.node_name = node.name
-            nodestat.item_count = node.item_count
-            nodestat.success_count = node.success_count
-            nodestat.failure_count = node.failure_count
-            nodestat.run_time = node.run_time
-            self.runstat.nodes.append(nodestat)
+            self.runstat.nodes.append(NodeStatistic.clone(node))
 
     def merge_statistics_into(self, dag):
         for nodestat in self.runstat.nodes:
             node = dag.node_by_name(nodestat.node_name)
-            node.name = nodestat.node_name
-            node.item_count += nodestat.item_count
-            node.success_count += nodestat.success_count
-            node.failure_count += nodestat.failure_count
-            node.run_time += nodestat.run_time
+            NodeStatistic.merge(node, nodestat)
 
 
 # Job.source and Batch.source together specify the input data
@@ -135,6 +125,23 @@ class NodeStatistic(Base):
         self.failure_count = 0
         self.run_time = timedelta()
 
+    @staticmethod
+    def merge(into, from_stat):
+        into.name = from_stat.node_name
+        into.item_count += from_stat.item_count
+        into.success_count += from_stat.success_count
+        into.failure_count += from_stat.failure_count
+        into.run_time += from_stat.run_time
+
+    @classmethod
+    def clone(cls, node):
+        new_node = cls()
+        new_node.node_name = node.name
+        new_node.item_count = node.item_count
+        new_node.success_count = node.success_count
+        new_node.failure_count = node.failure_count
+        new_node.run_time = node.run_time
+        return new_node
 
 
 def ensure_schema(sqlalchemy_engine, schema):
