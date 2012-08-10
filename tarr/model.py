@@ -105,7 +105,7 @@ class RunStatistic(Base):
 
 class NodeStatistic(Base):
 
-    __tablename__ = 'dagnodestat'
+    __tablename__ = 'nodestat'
 
     nodestat_id = Column(sa.Integer, primary_key=True, nullable=False)
 
