@@ -23,6 +23,10 @@ class Application(ResourceLocator):
     job = None
     batch = None
 
+    def setup(self):
+        '''Create application specific schema here'''
+        pass
+
     def create_job(self, name, dag_config, source, partitioning_name, description):
         self.job = Job()
 

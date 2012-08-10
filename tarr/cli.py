@@ -66,6 +66,7 @@ class Cli(object):
     def command_create_job(self, args):
         self.init_db(args)
         self.get_application(args.application)
+        self.application.setup()
 
         self.application.create_job(
             name=args.name,
