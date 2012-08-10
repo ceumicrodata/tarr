@@ -72,6 +72,7 @@ class Return(ConditionalInstruction):
         return self.__class__(self.return_value)
 
 
+# FIXME: RETURN -> RETURN_WITH_CURRENT_CONDITION
 RETURN = Return()
 RETURN_TRUE = Return(return_value=True)
 RETURN_FALSE = Return(return_value=False)
@@ -108,6 +109,7 @@ class BranchingInstruction(ConditionalInstruction):
         self.instruction_on_no = instruction
 
     # compiler
+    # FIXME: on_no -> on_no_return_with
     def on_no(self, label):
         return Macro(self, OnNo(label))
 
