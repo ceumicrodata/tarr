@@ -6,7 +6,7 @@ from datetime import timedelta
 
 
 Session = sa.orm.sessionmaker()
-_engine = None
+engine = None
 
 
 TARR_SCHEMA = 'tarr'
@@ -156,7 +156,12 @@ def ensure_schema(sqlalchemy_engine, schema):
         c.close()
 
 
-# FIXME: init is untested!
+def init_meta_with_schema(meta):
+    # create schema - sqlalchemy 0.7.9 do not do it by itself, thus failing in create_all
+    ensure_schema(engine, meta.schema)
+    meta.create_all(engine, checkfirst=True)
+
+
 def init(sqlalchemy_engine):
     '''
     Initialize TARR database objects
@@ -165,25 +170,22 @@ def init(sqlalchemy_engine):
 
     Call before using any db operation.
     '''
+    global engine
+    engine = sqlalchemy_engine
+
     # create missing objects
-    # create schema - sqlalchemy 0.7.9 do not do it by itself, thus failing in create_all
-    ensure_schema(sqlalchemy_engine, TARR_SCHEMA)
-    meta.create_all(sqlalchemy_engine, checkfirst=True)
+    init_meta_with_schema(meta)
 
-    Session.configure(bind=sqlalchemy_engine)
+    Session.configure(bind=engine)
 
 
-# FIXME: init_from is untested!
 def init_from(args):
     connect_string = 'postgresql://{0.user}:{0.password}@{0.host}:{0.port}/{0.database}'.format(args)
-
-    global _engine
-    _engine = sqlalchemy.create_engine(connect_string)
-    init(_engine)
+    init(sqlalchemy.create_engine(connect_string))
 
 
 def shutdown():
-    global _engine
-    if _engine:
-        _engine.dispose()
-        _engine = None
+    global engine
+    if engine:
+        engine.dispose()
+        engine = None
