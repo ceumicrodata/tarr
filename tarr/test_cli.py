@@ -2,7 +2,7 @@ import unittest
 import mock
 import tarr.cli as m # odule
 import tarr.application
-from tarr.db_model import Job, Batch
+from tarr.model import Job, Batch
 from db.db_test import TestConnection, SqlTestCase
 
 

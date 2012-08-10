@@ -1,5 +1,5 @@
 import argparse
-import tarr.db_model as db
+import tarr.model as db # FIXME: db -> model
 from db.connection import add_connection_options_to # FIXME: db.connection is external to TARR!
 from zope.dottedname.resolve import resolve as dottedname_resolve
 

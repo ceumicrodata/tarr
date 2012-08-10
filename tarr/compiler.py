@@ -1,5 +1,5 @@
 from tarr import compiler_base
-from tarr import db_model
+from tarr import model
 from datetime import datetime, timedelta
 
 
@@ -39,7 +39,7 @@ class StatisticsCollectorRunner(compiler_base.Runner):
 
     def ensure_statistics(self, index):
         while index >= len(self.statistics):
-            stat = db_model.NodeStatistic()
+            stat = model.NodeStatistic()
             stat.init(index)
             self.statistics.append(stat)
 

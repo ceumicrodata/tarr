@@ -1,4 +1,4 @@
-from tarr.db_model import Job
+from tarr.model import Job
 from tarr.runner import Runner
 
 import hashlib

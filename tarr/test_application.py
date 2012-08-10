@@ -1,7 +1,7 @@
 import unittest
 import mock
 import tarr.application as m # odule
-import tarr.db_model
+import tarr.model
 from db import db_test
 from datetime import datetime, timedelta
 
@@ -19,7 +19,7 @@ def create_job(app, name='test', dag_config='', source='', partitioning_name='',
 
 
 def uncompleted_batch(source):
-    batch = tarr.db_model.Batch()
+    batch = tarr.model.Batch()
     batch.source = source
     return batch
 
@@ -347,13 +347,13 @@ class Test_statistics(db_test.SqlTestCase):
 
     def setUp(self):
         super(Test_statistics, self).setUp()
-        tarr.db_model.init_from(db_test.TestConnection)
-        self.session = tarr.db_model.Session()
+        tarr.model.init_from(db_test.TestConnection)
+        self.session = tarr.model.Session()
 
     def tearDown(self):
         self.session.close()
         self.session = None
-        tarr.db_model.shutdown()
+        tarr.model.shutdown()
         super(Test_statistics, self).tearDown()
 
     def make_app(self):
@@ -389,7 +389,7 @@ class Test_statistics(db_test.SqlTestCase):
 
         app = m.Application()
         app.session = self.session
-        app.job = self.session.query(tarr.db_model.Job).one()
+        app.job = self.session.query(tarr.model.Job).one()
         app.load_dag()
         app.batch = app.job.batches[0]
         return app
