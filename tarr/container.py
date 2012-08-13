@@ -19,8 +19,8 @@ class ProcessorContainer(tarr.dag.Node):
     run_time = timedelta()
 
     def initialize(self):
-        processor_class = dottedname_resolve(self.impl)
-        self.processor = processor_class(container=self)
+        processor_instantiator = dottedname_resolve(self.impl)
+        self.processor = processor_instantiator.instantiate(container=self)
 
     def process(self, data):
         self.status = self.SUCCESS

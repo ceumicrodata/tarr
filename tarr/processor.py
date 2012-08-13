@@ -13,8 +13,11 @@ class Processor(object):
 
     container = None
 
-    def __init__(self, container):
-        self.container = container
+    @classmethod
+    def instantiate(cls, container):
+        processor = cls()
+        processor.container = container
+        return processor
 
     def process(self, data):
         ''' returns the processed data
@@ -26,6 +29,32 @@ class Processor(object):
 
 # decorators that create Processor-s from functions
 
+class BranchProcessor(Processor):
+
+    func = None
+
+    def process(self, data):
+        if self.func(data):
+            return data
+        raise ProcessorFailed
+
+
+class RuleProcessor(Processor):
+
+    func = None
+
+    def process(self, data):
+        return self.func(data)
+
+
+def func_instantiator(cls, func):
+    def instantiate(container):
+        processor = cls.instantiate(container)
+        processor.func = func
+        return processor
+    return instantiate
+
+
 # Test from Test And Rule Registry, not named `test` to avoid test runner picking it up
 def branch(func):
     '''
@@ -34,15 +63,8 @@ def branch(func):
     def odd(data):
         return data.number % 2 == 1
     '''
-    class wrapper(Processor):
-
-        def process(self, data):
-            if func(data):
-                return data
-            raise ProcessorFailed
-
-    wrapper.__name__ = func.__name__
-    return wrapper
+    func.instantiate = func_instantiator(BranchProcessor, func)
+    return func
 
 
 # Rule from Test And Rule Registry
@@ -54,10 +76,5 @@ def rule(func):
         ...
         return new_data
     '''
-    class wrapper(Processor):
-
-        def process(self, data):
-            return func(data)
-
-    wrapper.__name__ = func.__name__
-    return wrapper
+    func.instantiate = func_instantiator(RuleProcessor, func)
+    return func
