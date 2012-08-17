@@ -34,17 +34,20 @@ class Test_parse_args(unittest.TestCase):
         self.assertEqual('delete_job', args.command)
         self.assertEqual('jobname', args.name)
 
-    def test_process_job(self):
-        args = m.parse_args('process_job jobname'.split())
+    def check_process_job(self, command):
+        args = m.parse_args([command, 'jobname'])
 
-        self.assertEqual('process_job', args.command)
+        self.assertEqual(command, args.command)
         self.assertEqual('jobname', args.name)
+
+    def test_process_job(self):
+        self.check_process_job('process_job')
+
+    def test_sequential_process_job(self):
+        self.check_process_job('sequential_process_job')
 
     def test_parallel_process_job(self):
-        args = m.parse_args('parallel_process_job jobname'.split())
-
-        self.assertEqual('parallel_process_job', args.command)
-        self.assertEqual('jobname', args.name)
+        self.check_process_job('parallel_process_job')
 
     def test_parsed_args_is_pickleable(self):
         args = m.parse_args('parallel_process_job jobname'.split())

@@ -33,7 +33,10 @@ def parse_args(args=None):
     p = subparser('process_job', description='Start or continue processing an existing job')
     p.add_argument('name', help='job name')
 
-    p = subparser('parallel_process_job', description='Start or continue processing an existing job in parallel')
+    p = subparser('sequential_process_job', description='Start or continue processing an existing job one job after another')
+    p.add_argument('name', help='job name')
+
+    p = subparser('parallel_process_job',description='Start or continue processing an existing job batches are processed in parallel')
     p.add_argument('name', help='job name')
 
     p = subparser('process_batch', description='Process a single batch')
@@ -154,11 +157,12 @@ def process_batch_parallel(parallel_arg):
 
 
 COMMANDS = dict(
-        create_job=CreateJobCommand,
-        delete_job=DeleteJobCommand,
-        process_job=ProcessJobCommand,
-        parallel_process_job=ParallelProcessJobCommand,
-        process_batch=ProcessBatchCommand)
+    create_job=CreateJobCommand,
+    delete_job=DeleteJobCommand,
+    process_job=ParallelProcessJobCommand,
+    sequential_process_job=ProcessJobCommand,
+    parallel_process_job=ParallelProcessJobCommand,
+    process_batch=ProcessBatchCommand)
 
 
 def main(commands=None, args=None):
