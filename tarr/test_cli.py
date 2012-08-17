@@ -6,18 +6,17 @@ from tarr.model import Job, Batch
 from db.db_test import TestConnection, SqlTestCase
 
 
-class Test_Cli_parse_args(unittest.TestCase):
+class Test_parse_args(unittest.TestCase):
 
     def test_create_job(self):
-        cli = m.Cli()
-        args = cli.parse_args(
+        args = m.parse_args(
             (
                 'create_job jobname --app=location.clean.Application --dag=dag-config --source=complex:rovat_13:pm'
                 ' --partitioning_name=every_200'
             ).split()
             + ['--description=a description'])
 
-        self.assertEqual(cli.command_create_job, args.command)
+        self.assertEqual('command_create_job', args.command)
         self.assertEqual('jobname', args.name)
         self.assertEqual('location.clean.Application', args.application)
         self.assertEqual('dag-config', args.dag_config)
@@ -26,39 +25,22 @@ class Test_Cli_parse_args(unittest.TestCase):
         self.assertEqual('a description', args.description)
 
     def test_delete_job(self):
-        cli = m.Cli()
-        args = cli.parse_args('delete_job jobname'.split())
+        args = m.parse_args('delete_job jobname'.split())
 
-        self.assertEqual(cli.command_delete_job, args.command)
+        self.assertEqual('command_delete_job', args.command)
         self.assertEqual('jobname', args.name)
 
     def test_process_job(self):
-        cli = m.Cli()
-        args = cli.parse_args('process_job jobname'.split())
+        args = m.parse_args('process_job jobname'.split())
 
-        self.assertEqual(cli.command_process_job, args.command)
+        self.assertEqual('command_process_job', args.command)
         self.assertEqual('jobname', args.name)
 
     def test_process_batch(self):
-        cli = m.Cli()
-        args = cli.parse_args('process_batch batch_id'.split())
+        args = m.parse_args('process_batch batch_id'.split())
 
-        self.assertEqual(cli.command_process_batch, args.command)
+        self.assertEqual('command_process_batch', args.command)
         self.assertEqual('batch_id', args.batch_id)
-
-
-class Test_Cli_main(unittest.TestCase):
-
-    def test(self):
-        cli = m.Cli()
-        command_mock = mock.Mock()
-        mock_args = mock.Mock()
-        mock_args.command = command_mock
-
-        cli.parse_args = mock.Mock(cli.parse_args, return_value=mock_args)
-        cli.main('a s d'.split())
-
-        command_mock.assert_called_once_with(mock_args)
 
 
 class Test_Cli_integration(SqlTestCase):
