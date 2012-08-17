@@ -4,6 +4,10 @@ import tarr.cli as m # odule
 import tarr.application
 from tarr.model import Job, Batch
 from db.db_test import TestConnection, SqlTestCase
+import pickle
+
+# FIXME: tarr.cli: these tests are to be replaced with a test against a realistic, but simple test application (like one recording something known or easy to derive)
+# actually this is the trivial way for testing parallel processing, but would also give more confidence for the command line module
 
 
 class Test_parse_args(unittest.TestCase):
@@ -36,11 +40,25 @@ class Test_parse_args(unittest.TestCase):
         self.assertEqual('process_job', args.command)
         self.assertEqual('jobname', args.name)
 
-    def test_process_batch(self):
-        args = m.parse_args('process_batch batch_id'.split())
+    def test_parallel_process_job(self):
+        args = m.parse_args('parallel_process_job jobname'.split())
 
-        self.assertEqual('process_batch', args.command)
-        self.assertEqual('batch_id', args.batch_id)
+        self.assertEqual('parallel_process_job', args.command)
+        self.assertEqual('jobname', args.name)
+
+    def test_parsed_args_is_pickleable(self):
+        args = m.parse_args('parallel_process_job jobname'.split())
+
+    def test_process_batch(self):
+        # parallel processing is working with pickle - or similar marshalling
+        args = TestConnection().as_args_list() + 'process_batch batch_id'.split()
+
+        parsed_args = m.parse_args(args)
+
+        pickled_args = pickle.dumps(parsed_args)
+        unpickled_args = pickle.loads(pickled_args)
+
+        self.assertEqual(parsed_args, unpickled_args)
 
 
 class Test_main(unittest.TestCase):

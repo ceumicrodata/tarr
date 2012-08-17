@@ -33,6 +33,9 @@ def parse_args(args=None):
     p = subparser('process_job', description='Start or continue processing an existing job')
     p.add_argument('name', help='job name')
 
+    p = subparser('parallel_process_job', description='Start or continue processing an existing job in parallel')
+    p.add_argument('name', help='job name')
+
     p = subparser('process_batch', description='Process a single batch')
     p.add_argument('batch_id', help='batch identifier')
 
@@ -118,10 +121,43 @@ class ProcessBatchCommand(Command):
         self.process_batch(args.batch_id)
 
 
+class ParallelProcessJobCommand(Command):
+
+    def run(self, args):
+        # FIXME: ParallelProcessJobCommand is untested
+        self.get_application_from_jobname(args.name)
+        batch_ids = [batch.batch_id
+            for batch in self.application.job.batches
+            if not batch.is_processed]
+        map_parallel(process_batch_parallel,
+            zip(batch_ids, itertools.repeat(args)))
+
+
+def _process_batch_parallel(parallel_arg):
+    batch_id, connection_args = parallel_arg
+
+    # XXX almost duplicate of main() internals
+    command = ProcessBatchCommand()
+    command.init_db(connection_args)
+    try:
+        command.process_batch(batch_id)
+    finally:
+        command.shutdown()
+
+def process_batch_parallel(parallel_arg):
+    try:
+        _process_batch_parallel(parallel_arg)
+    except:
+        import traceback
+        traceback.print_exc()
+        raise
+
+
 COMMANDS = dict(
         create_job=CreateJobCommand,
         delete_job=DeleteJobCommand,
         process_job=ProcessJobCommand,
+        parallel_process_job=ParallelProcessJobCommand,
         process_batch=ProcessBatchCommand)
 
 
@@ -129,6 +165,7 @@ def main(commands=None, args=None):
     parsed_args = parse_args(args)
     commands = commands or COMMANDS
     command_class = commands[parsed_args.command]
+
     command = command_class()
     command.init_db(parsed_args)
     try:
