@@ -210,24 +210,32 @@ class Test_ProcessBatchCommand(unittest.TestCase):
         mock_get_application_from_batchid(command, application_mock)
         return command
 
+    def test_process_batch(self):
+        command = self.get_command()
+        command.process_batch = mock.Mock(command.process_batch)
+
+        command.run(args_mock())
+
+        command.process_batch.assert_called_once_with(mock.sentinel.batch_id)
+
     def test_get_application_from_batchid(self):
         command = self.get_command()
 
-        command.run(args_mock())
+        command.process_batch(mock.sentinel.batch_id)
 
         command.get_application_from_batchid.assert_called_once_with(mock.sentinel.batch_id)
 
     def test_load_dag(self):
         command = self.get_command()
 
-        command.run(args_mock())
+        command.process_batch(mock.sentinel.batch_id)
 
         command.application.load_dag.assert_called_once_with()
 
-    def test_process_batch(self):
+    def test_app_process_batch(self):
         command = self.get_command()
 
-        command.run(args_mock())
+        command.process_batch(mock.sentinel.batch_id)
 
         command.application.process_batch.assert_called_once_with()
 

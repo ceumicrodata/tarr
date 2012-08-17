@@ -104,11 +104,18 @@ class ProcessJobCommand(Command):
 
 class ProcessBatchCommand(Command):
 
-    def run(self, args):
-        self.get_application_from_batchid(args.batch_id)
+    def process_batch(self, batch_id):
+        self.get_application_from_batchid(batch_id)
 
         self.application.load_dag()
         self.application.process_batch()
+
+    def run(self, args):
+        # process_batch should do everything,
+        # except working with the command line arguments
+        # which contains only the connection information
+        # in case of parallel runs!
+        self.process_batch(args.batch_id)
 
 
 COMMANDS = dict(
