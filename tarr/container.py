@@ -41,3 +41,10 @@ class ProcessorContainer(tarr.dag.Node):
 
         after = datetime.now()
         self.run_time += after - before
+
+    def dot_label_for_success(self):
+        return "S: %d" % self.success_count
+
+    def dot_label_for_failure(self):
+        return "F: %d" % self.failure_count
+

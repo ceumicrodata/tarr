@@ -47,15 +47,21 @@ class Node(object):
                 names.append(name)
                 labels.append(label)
 
-        addlabel(self.nn_success, 'S')
-        addlabel(self.nn_fail, 'F')
+        addlabel(self.nn_success, self.dot_label_for_success())
+        addlabel(self.nn_fail, self.dot_label_for_failure())
 
         if self.nn_success and self.nn_success == self.nn_fail:
             return '{0} -> {1}'.format(self.name, self.nn_success)
 
         return ' '.join(
-            '{0} -> {1} [label={2}]'.format(self.name, name, label)
+            '{0} -> {1} [label="{2}"]'.format(self.name, name, label)
             for (name, label) in zip(names, labels))
+
+    def dot_label_for_success(self):
+        return "S"
+
+    def dot_label_for_failure(self):
+        return "F"
 
 
 class DAG(object):
