@@ -189,7 +189,7 @@ class Call(Runnable, BranchingInstruction):
     def clone(self):
         return self.__class__(self.label)
 
-def do(label):
+def DO(label):
     return Call(label)
 
 

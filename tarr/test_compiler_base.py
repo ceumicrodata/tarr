@@ -2,7 +2,7 @@ import unittest
 from .compiler_base import (
     Instruction, BranchingInstruction,
     RETURN, RETURN_TRUE, RETURN_FALSE,
-    DEF, do,
+    DEF, DO,
     DuplicateLabelError, UndefinedLabelError, BackwardReferenceError, FallOverOnDefineError, UnclosedProgramError,
     Compiler, Runner)
 
@@ -78,7 +78,7 @@ class Test_Compiler(unittest.TestCase):
         self.assertRaises(UnclosedProgramError, compile, [Noop])
 
     def test_backward_reference_is_not_compilable(self):
-        self.assertRaises(BackwardReferenceError, compile, [RETURN, DEF('label'), Noop, do('label')])
+        self.assertRaises(BackwardReferenceError, compile, [RETURN, DEF('label'), Noop, DO('label')])
 
     def test_branch_on_yes(self):
         prog = compile([IsOdd.on_no('add2'), Add1, RETURN, DEF('add2'), Add1, Add1, RETURN])
@@ -90,18 +90,18 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(5, prog.run(4))
         self.assertEqual(5, prog.run(3))
 
-    def test_do(self):
+    def test_DO(self):
         prog = compile([
-            do('+1'), do('+2'), RETURN,
+            DO('+1'), DO('+2'), RETURN,
 
-            DEF('+2'), do('+1'), do('+1'), RETURN,
+            DEF('+2'), DO('+1'), DO('+1'), RETURN,
             DEF('+1'), Add1, RETURN
             ])
         self.assertEqual(3, prog.run(0))
 
     def test_macro_return_yes(self):
         prog = compile(
-            [do('odd?').on_no('even'), Add1, RETURN,
+            [DO('odd?').on_no('even'), Add1, RETURN,
 
             DEF('even'), RETURN,
 
@@ -116,7 +116,7 @@ class Test_Compiler(unittest.TestCase):
 
     def test_macro_return_no(self):
         prog = compile(
-            [do('odd?').on_no('even'), Add1, RETURN,
+            [DO('odd?').on_no('even'), Add1, RETURN,
 
             DEF('even'), RETURN,
 
@@ -131,12 +131,12 @@ class Test_Compiler(unittest.TestCase):
 
     # used in the next 2 tests
     complex_prog_spec = [
-        do('even?').on_no('odd'), RETURN,
+        DO('even?').on_no('odd'), RETURN,
 
         DEF('odd'), Add1, RETURN,
 
         DEF('even?'),
-            do('odd?').on_no('even? even'),
+            DO('odd?').on_no('even? even'),
                     RETURN_FALSE,
                 DEF('even? even'), RETURN_TRUE,
 
