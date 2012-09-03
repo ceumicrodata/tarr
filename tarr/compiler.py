@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from .compiler_base import (
     Instruction, BranchingInstruction,
     RETURN, RETURN_TRUE, RETURN_FALSE,
-    define, do)
+    DEF, do)
 
 
 class StatisticsCollectorRunner(compiler_base.Runner):

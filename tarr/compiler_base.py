@@ -139,7 +139,7 @@ class Define(Compilable):
         compiler.add_label(self.label)
         compiler.would_fall_over = True
 
-def define(label):
+def DEF(label):
     return Define(label)
 
 

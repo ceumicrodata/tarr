@@ -2,7 +2,7 @@ import unittest
 from .compiler_base import (
     Instruction, BranchingInstruction,
     RETURN, RETURN_TRUE, RETURN_FALSE,
-    define, do,
+    DEF, do,
     DuplicateLabelError, UndefinedLabelError, BackwardReferenceError, FallOverOnDefineError, UnclosedProgramError,
     Compiler, Runner)
 
@@ -66,27 +66,27 @@ class Test_Compiler(unittest.TestCase):
         self.assertFalse(prog.condition.value)
 
     def test_duplicate_definition_of_label_is_not_compilable(self):
-        self.assertRaises(DuplicateLabelError, compile, [RETURN, define('label'), Noop, RETURN, define('label'), Noop])
+        self.assertRaises(DuplicateLabelError, compile, [RETURN, DEF('label'), Noop, RETURN, DEF('label'), Noop])
 
     def test_incomplete_program_is_not_compilable(self):
-        self.assertRaises(UndefinedLabelError, compile, [Noop, RETURN, define('label'), RETURN, define('label2')])
+        self.assertRaises(UndefinedLabelError, compile, [Noop, RETURN, DEF('label'), RETURN, DEF('label2')])
 
     def test_incomplete_before_label_is_not_compilable(self):
-        self.assertRaises(FallOverOnDefineError, compile, [Noop, define('label'), Noop, RETURN])
+        self.assertRaises(FallOverOnDefineError, compile, [Noop, DEF('label'), Noop, RETURN])
 
     def test_program_without_closing_return_is_not_compilable(self):
         self.assertRaises(UnclosedProgramError, compile, [Noop])
 
     def test_backward_reference_is_not_compilable(self):
-        self.assertRaises(BackwardReferenceError, compile, [RETURN, define('label'), Noop, do('label')])
+        self.assertRaises(BackwardReferenceError, compile, [RETURN, DEF('label'), Noop, do('label')])
 
     def test_branch_on_yes(self):
-        prog = compile([IsOdd.on_no('add2'), Add1, RETURN, define('add2'), Add1, Add1, RETURN])
+        prog = compile([IsOdd.on_no('add2'), Add1, RETURN, DEF('add2'), Add1, Add1, RETURN])
         self.assertEqual(4, prog.run(3))
         self.assertEqual(6, prog.run(4))
 
     def test_branch_on_no(self):
-        prog = compile([IsOdd.on_no('add1'), Add1, Add1, RETURN, define('add1'), Add1, RETURN])
+        prog = compile([IsOdd.on_no('add1'), Add1, Add1, RETURN, DEF('add1'), Add1, RETURN])
         self.assertEqual(5, prog.run(4))
         self.assertEqual(5, prog.run(3))
 
@@ -94,8 +94,8 @@ class Test_Compiler(unittest.TestCase):
         prog = compile([
             do('+1'), do('+2'), RETURN,
 
-            define('+2'), do('+1'), do('+1'), RETURN,
-            define('+1'), Add1, RETURN
+            DEF('+2'), do('+1'), do('+1'), RETURN,
+            DEF('+1'), Add1, RETURN
             ])
         self.assertEqual(3, prog.run(0))
 
@@ -103,12 +103,12 @@ class Test_Compiler(unittest.TestCase):
         prog = compile(
             [do('odd?').on_no('even'), Add1, RETURN,
 
-            define('even'), RETURN,
+            DEF('even'), RETURN,
 
-            define('odd?'),
+            DEF('odd?'),
                 IsOdd.on_no('odd?: no'),
                         RETURN_TRUE,
-                    define('odd?: no'),
+                    DEF('odd?: no'),
                         RETURN_FALSE])
 
         self.assertEqual(2, prog.run(1))
@@ -118,12 +118,12 @@ class Test_Compiler(unittest.TestCase):
         prog = compile(
             [do('odd?').on_no('even'), Add1, RETURN,
 
-            define('even'), RETURN,
+            DEF('even'), RETURN,
 
-            define('odd?'),
+            DEF('odd?'),
                 IsOdd.on_no('odd?: no'),
                         RETURN_TRUE,
-                    define('odd?: no'),
+                    DEF('odd?: no'),
                         RETURN_FALSE])
 
         self.assertEqual(2, prog.run(2))
@@ -133,14 +133,14 @@ class Test_Compiler(unittest.TestCase):
     complex_prog_spec = [
         do('even?').on_no('odd'), RETURN,
 
-        define('odd'), Add1, RETURN,
+        DEF('odd'), Add1, RETURN,
 
-        define('even?'),
+        DEF('even?'),
             do('odd?').on_no('even? even'),
                     RETURN_FALSE,
-                define('even? even'), RETURN_TRUE,
+                DEF('even? even'), RETURN_TRUE,
 
-        define('odd?'),
+        DEF('odd?'),
             IsOdd, RETURN,
     ]
 
