@@ -122,7 +122,7 @@ class OnNo(Compilable):
         self.label = label
 
     def compile(self, compiler):
-        compiler.register_fix(self.label, compiler.last_instruction.set_on_no)
+        compiler.register_linker(self.label, compiler.last_instruction.set_on_no)
 
 
 class Define(Compilable):
@@ -181,7 +181,7 @@ class Call(Runnable, BranchingInstruction):
 
     def compile(self, compiler):
         super(Call, self).compile(compiler)
-        compiler.register_fix(self.label, compiler.last_instruction.set_start_instruction)
+        compiler.register_linker(self.label, compiler.last_instruction.set_start_instruction)
 
     def set_start_instruction(self, instruction):
         self.start_instruction = instruction
@@ -229,7 +229,7 @@ class Compiler(object):
     instructions = None
     previous_labels = None
     label = None
-    fixes = None
+    linkers = None
     would_fall_over = True
 
     @property
@@ -240,13 +240,13 @@ class Compiler(object):
         self.instructions = list()
         self.label = None
         self.previous_labels = set()
-        self.fixes = dict()
+        self.linkers = dict()
 
         for compilable in program_spec:
             compilable.compile(self)
 
-        if self.fixes or self.label:
-            raise UndefinedLabelError(set(self.fixes.keys()).union(set([self.label])))
+        if self.linkers or self.label:
+            raise UndefinedLabelError(set(self.linkers.keys()).union(set([self.label])))
 
         if self.would_fall_over:
             raise UnclosedProgramError
@@ -264,10 +264,10 @@ class Compiler(object):
 
     def fix_labels(self, instruction):
         self.previous_labels.add(self.label)
-        if self.label in self.fixes:
-            for fix in self.fixes[self.label]:
-                fix(instruction)
-            del self.fixes[self.label]
+        if self.label in self.linkers:
+            for linker in self.linkers[self.label]:
+                linker(instruction)
+            del self.linkers[self.label]
         self.label = None
 
     def add_label(self, label):
@@ -276,8 +276,8 @@ class Compiler(object):
 
         self.label = label
 
-    def register_fix(self, label, fix):
+    def register_linker(self, label, linker):
         if label in self.previous_labels:
             raise BackwardReferenceError
 
-        self.fixes.setdefault(label, []).append(fix)
+        self.linkers.setdefault(label, []).append(linker)
