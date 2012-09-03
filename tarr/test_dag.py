@@ -70,19 +70,19 @@ class TestNode_to_dot(unittest.TestCase):
         n.name = 'a_node'
         n.nn_success = 'b_node'
         n.nn_fail = 'f_node'
-        self.assertEqual('a_node -> b_node [label=S] a_node -> f_node [label=F]', n.to_dot())
+        self.assertEqual('a_node -> b_node [label="S"] a_node -> f_node [label="F"]', n.to_dot())
 
     def test_only_S(self):
         n = m.Node()
         n.name = 'a_node'
         n.nn_success = 'b_node'
-        self.assertEqual('a_node -> b_node [label=S]', n.to_dot())
+        self.assertEqual('a_node -> b_node [label="S"]', n.to_dot())
 
     def test_only_F(self):
         n = m.Node()
         n.name = 'a_node'
         n.nn_fail = 'b_node'
-        self.assertEqual('a_node -> b_node [label=F]', n.to_dot())
+        self.assertEqual('a_node -> b_node [label="F"]', n.to_dot())
 
 
 class TestDag_to_dot(unittest.TestCase):
