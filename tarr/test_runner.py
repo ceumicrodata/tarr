@@ -37,7 +37,7 @@ class TestRunner(unittest.TestCase):
         runner = m.Runner(TEST_CONFIG)
         plus_one = runner.dag.node_by_name('plus_one')
         two_div = runner.dag.node_by_name('two_div')
-        erase = runner.dag.node_by_name('erase')
+        # erase = runner.dag.node_by_name('erase')
 
         self.assertTrue(isinstance(plus_one.processor, Processor_1plus))
         self.assertTrue(isinstance(two_div.processor, Processor_2div))
