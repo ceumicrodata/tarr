@@ -22,6 +22,7 @@ class Mul2(Instruction):
 
 Mul2 = Mul2()
 
+
 class IsOdd(BranchingInstruction):
 
     def run(self, state):
@@ -30,12 +31,14 @@ class IsOdd(BranchingInstruction):
 
 IsOdd = IsOdd()
 
+
 class Die(Instruction):
 
     def run(self, state):
         raise Exception('')
 
 Die = Die()
+
 
 class Noop(Instruction):
     pass

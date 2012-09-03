@@ -54,15 +54,15 @@ class Return(ConditionalInstruction):
     def next_instruction(self):
         return None
 
+    @next_instruction.setter
+    def next_instruction(self, instruction):
+        pass
+
     def run(self, state):
         if self.return_value is not None:
             self.condition.value = self.return_value
 
         return state
-
-    @next_instruction.setter
-    def next_instruction(self, instruction):
-        pass
 
     def compile(self, compiler):
         super(Return, self).compile(compiler)
