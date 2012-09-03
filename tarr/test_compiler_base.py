@@ -90,11 +90,6 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(5, prog.run(4))
         self.assertEqual(5, prog.run(3))
 
-    def test_multiple_labels(self):
-        prog = compile([IsOdd.on_no('no'), do('yes'), RETURN, define('yes', 'no'), Add1, RETURN])
-        self.assertEqual(4, prog.run(3))
-        self.assertEqual(5, prog.run(4))
-
     def test_do(self):
         prog = compile([
             do('+1'), do('+2'), RETURN,

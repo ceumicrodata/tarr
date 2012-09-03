@@ -127,20 +127,20 @@ class OnNo(Compilable):
 
 class Define(Compilable):
 
-    labels = None
+    label = None
 
-    def __init__(self, labels):
-        self.labels = labels
+    def __init__(self, label):
+        self.label = label
 
     def compile(self, compiler):
         if compiler.would_fall_over:
             raise FallOverOnDefineError
 
-        compiler.add_labels(self.labels)
+        compiler.add_label(self.label)
         compiler.would_fall_over = True
 
-def define(*labels):
-    return Define(set(labels))
+def define(label):
+    return Define(label)
 
 
 class Runner(object):
@@ -228,7 +228,7 @@ class Compiler(object):
 
     instructions = None
     previous_labels = None
-    labels = None
+    label = None
     fixes = None
     would_fall_over = True
 
@@ -238,15 +238,15 @@ class Compiler(object):
 
     def compile(self, program_spec):
         self.instructions = list()
-        self.labels = set()
+        self.label = None
         self.previous_labels = set()
         self.fixes = dict()
 
         for compilable in program_spec:
             compilable.compile(self)
 
-        if self.fixes or self.labels:
-            raise UndefinedLabelError(set(self.fixes.keys()).union(self.labels))
+        if self.fixes or self.label:
+            raise UndefinedLabelError(set(self.fixes.keys()).union(set([self.label])))
 
         if self.would_fall_over:
             raise UnclosedProgramError
@@ -263,19 +263,18 @@ class Compiler(object):
         self.fix_labels(instruction)
 
     def fix_labels(self, instruction):
-        self.previous_labels.update(self.labels)
-        for label in self.labels:
-            if label in self.fixes:
-                for fix in self.fixes[label]:
-                    fix(instruction)
-                del self.fixes[label]
-        self.labels = set()
+        self.previous_labels.add(self.label)
+        if self.label in self.fixes:
+            for fix in self.fixes[self.label]:
+                fix(instruction)
+            del self.fixes[self.label]
+        self.label = None
 
-    def add_labels(self, labels):
-        if not labels.isdisjoint(self.previous_labels):
+    def add_label(self, label):
+        if label in self.previous_labels:
             raise DuplicateLabelError
 
-        self.labels = labels
+        self.label = label
 
     def register_fix(self, label, fix):
         if label in self.previous_labels:
