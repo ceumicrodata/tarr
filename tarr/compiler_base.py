@@ -13,6 +13,12 @@ class FallOverOnDefineError(Exception):
 class UnclosedProgramError(Exception):
     pass
 
+class MissingEndIfError(Exception):
+    pass
+
+class MultipleElseError(Exception):
+    pass
+
 
 class Compilable(object):
 
@@ -66,7 +72,7 @@ class Return(ConditionalInstruction):
 
     def compile(self, compiler):
         super(Return, self).compile(compiler)
-        compiler.would_fall_over = False
+        compiler.path.close()
 
     def clone(self):
         return self.__class__(self.return_value)
@@ -76,16 +82,6 @@ class Return(ConditionalInstruction):
 RETURN = Return()
 RETURN_TRUE = Return(return_value=True)
 RETURN_FALSE = Return(return_value=False)
-
-
-class Macro(Compilable):
-
-    def __init__(self, *instructions):
-        self.instructions = instructions
-
-    def compile(self, compiler):
-        for instruction in self.instructions:
-            instruction.compile(compiler)
 
 
 class BranchingInstruction(ConditionalInstruction):
@@ -105,24 +101,11 @@ class BranchingInstruction(ConditionalInstruction):
         if self.instruction_on_no is None:
             self.instruction_on_no = instruction
 
-    def set_on_no(self, instruction):
+    def set_instruction_on_yes(self, instruction):
+        self.instruction_on_yes = instruction
+
+    def set_instruction_on_no(self, instruction):
         self.instruction_on_no = instruction
-
-    # compiler
-    # FIXME: on_no -> on_no_return_with
-    def on_no(self, label):
-        return Macro(self, OnNo(label))
-
-
-class OnNo(Compilable):
-
-    label = None
-
-    def __init__(self, label):
-        self.label = label
-
-    def compile(self, compiler):
-        compiler.register_linker(self.label, compiler.last_instruction.set_on_no)
 
 
 class Define(Compilable):
@@ -133,11 +116,10 @@ class Define(Compilable):
         self.label = label
 
     def compile(self, compiler):
-        if compiler.would_fall_over:
+        if compiler.path.is_open:
             raise FallOverOnDefineError
 
-        compiler.add_label(self.label)
-        compiler.would_fall_over = True
+        compiler.start_define_label(self.label)
 
 def DEF(label):
     return Define(label)
@@ -189,8 +171,42 @@ class Call(Runnable, BranchingInstruction):
     def clone(self):
         return self.__class__(self.label)
 
-def DO(label):
-    return Call(label)
+
+class CompileIf(Compilable):
+
+    def __init__(self, branch_instruction):
+        self.branch_instruction = branch_instruction
+
+    def compile(self, compiler):
+        branch_instruction = compiler.compilable(self.branch_instruction)
+        branch_instruction.compile(compiler)
+        false_path = compiler.path.split(compiler.last_instruction)
+        compiler.control_stack.append(IfElseControlFrame(compiler.path, false_path))
+
+def IF(branch_instruction):
+    return CompileIf(branch_instruction)
+
+
+class Else(Compilable):
+
+    def compile(self, compiler):
+        frame = compiler.control_stack[-1]
+        if frame.else_used:
+            raise MultipleElseError
+        compiler.path = frame.false_path
+        frame.else_used = True
+
+ELSE = Else()
+
+
+class EndIf(Compilable):
+
+    def compile(self, compiler):
+        frame = compiler.control_stack.pop()
+        compiler.path = frame.true_path
+        compiler.path.join(frame.false_path)
+
+ENDIF = EndIf()
 
 
 class Condition(object):
@@ -224,59 +240,199 @@ class Program(Runnable):
             register(self.condition)
 
 
+class Appender(object):
+    '''Knows how to continue a path
+
+    Continue = how to append a new instruction to
+    '''
+
+    def append(self, instruction):
+        pass
+
+
+class InstructionAppender(Appender):
+    '''Appends to previous instruction
+    '''
+
+    def __init__(self, instruction):
+        self.last_instruction = instruction
+
+    def append(self, instruction):
+        self.last_instruction.next_instruction = instruction
+        self.last_instruction = instruction
+
+
+class NewPathAppender(Appender):
+    '''Appends to empty path
+    '''
+
+    def __init__(self, path):
+        self.path = path
+
+    def append(self, instruction):
+        self.path.set_appender(InstructionAppender(instruction))
+
+
+class DefineAppender(Appender):
+    '''Defines the label when appending an instruction
+    '''
+
+    def __init__(self, compiler, path, label):
+        self.compiler = compiler
+        self.path = path
+        self.label = label
+
+    def append(self, instruction):
+        self.path.set_appender(InstructionAppender(instruction))
+        self.compiler.complete_define_label(self.label, instruction)
+
+
+class TrueBranchAppender(Appender):
+    '''Appends to True side of a branch instruction
+    '''
+
+    def __init__(self, path, branch_instruction):
+        self.path = path
+        self.branch_instruction = branch_instruction
+
+    def append(self, instruction):
+        self.branch_instruction.set_instruction_on_yes(instruction)
+        self.path.set_appender(InstructionAppender(instruction))
+
+
+class FalseBranchAppender(Appender):
+    '''Appends to False side of a branch instruction
+    '''
+
+    def __init__(self, path, branch_instruction):
+        self.path = path
+        self.branch_instruction = branch_instruction
+
+    def append(self, instruction):
+        self.branch_instruction.set_instruction_on_no(instruction)
+        self.path.set_appender(InstructionAppender(instruction))
+
+
+class JoinAppender(Appender):
+
+    def __init__(self, path, merged_path):
+        self.path = path
+        self.orig_appender = path.appender
+        self.merged_path = merged_path
+
+    def append(self, instruction):
+        self.merged_path.append(instruction)
+        self.path.set_appender(InstructionAppender(instruction))
+        self.orig_appender.append(instruction)
+
+
+class Path(object):
+    '''
+    An execution path.
+
+    Instructions can be appended to it and other paths can be joined in.
+    Real work happens in appenders, which are changed as needed.
+    '''
+
+    def __init__(self, appender=None):
+        self.appender = appender or NewPathAppender(self)
+        self._is_closed = False
+
+    def append(self, instruction):
+        self.appender.append(instruction)
+
+    def split(self, branch_instruction):
+        self.set_appender(TrueBranchAppender(self, branch_instruction))
+        false_path = Path()
+        false_path.set_appender(FalseBranchAppender(false_path, branch_instruction))
+        return false_path
+
+    def join(self, path):
+        self.appender = JoinAppender(self, path)
+
+    def set_appender(self, appender):
+        self.appender = appender
+
+    @property
+    def is_open(self):
+        return not self._is_closed
+
+    @property
+    def is_closed(self):
+        return self._is_closed
+
+    def close(self):
+        self._is_closed = True
+
+
+class IfElseControlFrame(object):
+
+    def __init__(self, true_path, false_path):
+        self.true_path = true_path
+        self.false_path = false_path
+        self.else_used = False
+
+
 class Compiler(object):
 
     instructions = None
+    control_stack = None
+    path = None
+
     previous_labels = None
-    label = None
     linkers = None
-    would_fall_over = True
 
     @property
     def last_instruction(self):
         return self.instructions[-1]
 
     def compile(self, program_spec):
+        self.control_stack = []
+        self.path = Path()
         self.instructions = list()
-        self.label = None
         self.previous_labels = set()
         self.linkers = dict()
 
-        for compilable in program_spec:
-            if isinstance(compilable, basestring):
-                compilable = Call(compilable)
+        for instruction in program_spec:
+            compilable = self.compilable(instruction)
             compilable.compile(self)
 
-        if self.linkers or self.label:
-            raise UndefinedLabelError(set(self.linkers.keys()).union(set([self.label])))
+        if self.control_stack:
+            raise MissingEndIfError
 
-        if self.would_fall_over:
+        if self.linkers:
+            raise UndefinedLabelError(set(self.linkers.keys()))
+
+        if self.path.is_open:
             raise UnclosedProgramError
-
-        for i, instruction in enumerate(self.instructions):
-            instruction.index = i
 
         return Program(self.instructions)
 
+    def compilable(self, instruction):
+        if isinstance(instruction, basestring):
+            return Call(instruction)
+
+        return instruction
+
     def add_instruction(self, instruction):
-        if self.instructions:
-            self.instructions[-1].next_instruction = instruction
+        self.path.append(instruction)
+        instruction.index = len(self.instructions)
         self.instructions.append(instruction)
-        self.fix_labels(instruction)
 
-    def fix_labels(self, instruction):
-        self.previous_labels.add(self.label)
-        if self.label in self.linkers:
-            for linker in self.linkers[self.label]:
-                linker(instruction)
-            del self.linkers[self.label]
-        self.label = None
-
-    def add_label(self, label):
+    def start_define_label(self, label):
         if label in self.previous_labels:
             raise DuplicateLabelError
 
-        self.label = label
+        self.path = Path()
+        # can not resolve label references yet, as the content (first instruction) is not known yet
+        self.path.set_appender(DefineAppender(self, self.path, label))
+
+    def complete_define_label(self, label, instruction):
+        self.previous_labels.add(label)
+        if label in self.linkers:
+            for linker in self.linkers[label]:
+                linker(instruction)
+            del self.linkers[label]
 
     def register_linker(self, label, linker):
         if label in self.previous_labels:

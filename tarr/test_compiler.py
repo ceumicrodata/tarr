@@ -1,6 +1,5 @@
 import unittest
 import tarr.compiler as m
-from datetime import timedelta
 
 
 Noop = m.Instruction()
