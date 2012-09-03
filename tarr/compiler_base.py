@@ -243,6 +243,8 @@ class Compiler(object):
         self.linkers = dict()
 
         for compilable in program_spec:
+            if isinstance(compilable, basestring):
+                compilable = Call(compilable)
             compilable.compile(self)
 
         if self.linkers or self.label:

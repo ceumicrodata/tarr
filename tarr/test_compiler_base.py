@@ -81,7 +81,7 @@ class Test_Compiler(unittest.TestCase):
         self.assertRaises(UnclosedProgramError, compile, [Noop])
 
     def test_backward_reference_is_not_compilable(self):
-        self.assertRaises(BackwardReferenceError, compile, [RETURN, DEF('label'), Noop, DO('label')])
+        self.assertRaises(BackwardReferenceError, compile, [RETURN, DEF('label'), Noop, 'label'])
 
     def test_branch_on_yes(self):
         prog = compile([IsOdd.on_no('add2'), Add1, RETURN, DEF('add2'), Add1, Add1, RETURN])
@@ -93,11 +93,11 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(5, prog.run(4))
         self.assertEqual(5, prog.run(3))
 
-    def test_DO(self):
+    def test_string_as_call_symbol(self):
         prog = compile([
-            DO('+1'), DO('+2'), RETURN,
+            '+1', '+2', RETURN,
 
-            DEF('+2'), DO('+1'), DO('+1'), RETURN,
+            DEF('+2'), '+1', '+1', RETURN,
             DEF('+1'), Add1, RETURN
             ])
         self.assertEqual(3, prog.run(0))
