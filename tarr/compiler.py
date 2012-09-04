@@ -67,3 +67,61 @@ def compile(program_spec):
     runner = StatisticsCollectorRunner(program.condition)
     program.register_runner(runner)
     return Program(program, runner)
+
+
+# decorators to make simple functions into a Instruction
+
+class TarrRuleInstruction(Instruction):
+
+    def __init__(self, func):
+        self.func = func
+
+    def run(self, data):
+        data.payload = self.func(data.payload)
+        return data
+
+    def clone(self):
+        return self.__class__(self.func)
+
+
+def rule(func):
+    '''
+    Decorator, enable function to be used as an instruction in a Tarr program.
+
+    Usage:
+
+    @rule
+    def func(data):
+        ...
+        return data
+    '''
+    func.compile = TarrRuleInstruction(func).compile
+    return func
+
+
+class TarrBranchInstruction(BranchingInstruction):
+
+    def __init__(self, func):
+        self.func = func
+
+    def run(self, data):
+        self.condition.value = self.func(data.payload)
+        return data
+
+    def clone(self):
+        return self.__class__(self.func)
+
+
+def branch(func):
+    '''
+    Decorator, enable function to be used as a condition in a Tarr program.
+
+    Usage:
+
+    @branch
+    def cond(data):
+        ...
+        return {True | False}
+    '''
+    func.compile = TarrBranchInstruction(func).compile
+    return func
