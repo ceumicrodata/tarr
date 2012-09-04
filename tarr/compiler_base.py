@@ -183,11 +183,10 @@ class CompileIf(Compilable):
         false_path = compiler.path.split(compiler.last_instruction)
         compiler.control_stack.append(IfElseControlFrame(compiler.path, false_path))
 
-def IF(branch_instruction):
-    return CompileIf(branch_instruction)
+IF = CompileIf
 
 
-class Else(Compilable):
+class CompileElse(Compilable):
 
     def compile(self, compiler):
         frame = compiler.control_stack[-1]
@@ -196,17 +195,17 @@ class Else(Compilable):
         compiler.path = frame.false_path
         frame.else_used = True
 
-ELSE = Else()
+ELSE = CompileElse()
 
 
-class EndIf(Compilable):
+class CompileEndIf(Compilable):
 
     def compile(self, compiler):
         frame = compiler.control_stack.pop()
         compiler.path = frame.true_path
         compiler.path.join(frame.false_path)
 
-ENDIF = EndIf()
+ENDIF = CompileEndIf()
 
 
 class Condition(object):
