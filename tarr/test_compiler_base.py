@@ -122,6 +122,26 @@ class Test_Path(unittest.TestCase):
         self.assertEqual(p1i2, p2i1.next_instruction)
         self.assertEqual(p1i2, p3i1.next_instruction)
 
+    def test_join_to_a_closed_path(self):
+        # p1 RETURN   p1i2
+        # p2 p2i1 /
+        p2i1 = m.Instruction()
+        p1i2 = m.Instruction()
+
+        path1 = m.Path()
+        path1.append(m.Return())
+        path1.close()
+        self.assertTrue(path1.is_closed)
+        path2 = m.Path()
+        path2.append(p2i1)
+
+        path1.join(path2)
+        self.assertFalse(path1.is_closed)
+
+        path1.append(p1i2)
+
+        self.assertEqual(p1i2, p2i1.next_instruction)
+
     def test_TrueBranchAppender(self):
         bi = m.BranchingInstruction()
         i1 = m.Instruction()
@@ -404,7 +424,7 @@ class Test_Compiler(unittest.TestCase):
 
         DEF ('odd?'),
             IsOdd,
-        RETURN,
+            RETURN,
     ]
 
     def test_macro_return(self):
@@ -420,3 +440,12 @@ class Test_Compiler(unittest.TestCase):
 
         indices = [i.index for i in prog.instructions]
         self.assertEqual(range(len(prog.instructions)), indices)
+
+    def test_joining_into_a_closed_path_reopens_it(self):
+        with self.assertRaises(UnclosedProgramError):
+            compile(
+                [
+                IF(IsOdd),
+                    RETURN,
+                ENDIF,
+                ])

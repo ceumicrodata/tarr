@@ -335,7 +335,7 @@ class Path(object):
 
     def __init__(self, appender=None):
         self.appender = appender or NewPathAppender(self)
-        self._is_closed = False
+        self._closed = False
 
     def append(self, instruction):
         self.appender.append(instruction)
@@ -347,6 +347,7 @@ class Path(object):
         return false_path
 
     def join(self, path):
+        self._closed = self.is_closed and path.is_closed
         self.appender = JoinAppender(self, path)
 
     def set_appender(self, appender):
@@ -354,14 +355,14 @@ class Path(object):
 
     @property
     def is_open(self):
-        return not self._is_closed
+        return not self._closed
 
     @property
     def is_closed(self):
-        return self._is_closed
+        return self._closed
 
     def close(self):
-        self._is_closed = True
+        self._closed = True
 
 
 class IfElseControlFrame(object):
