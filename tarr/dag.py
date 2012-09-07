@@ -50,12 +50,20 @@ class Node(object):
         addlabel(self.nn_success, self.dot_label_for_success())
         addlabel(self.nn_fail, self.dot_label_for_failure())
 
-        if self.nn_success and self.nn_success == self.nn_fail:
-            return '{0} -> {1}'.format(self.name, self.nn_success)
+        node_dot = '{0} [style=filled,fillcolor="{1}",shape="{2}"] '.format(self.name, self.dot_color(), self.dot_shape())
 
-        return ' '.join(
+        if self.nn_success and self.nn_success == self.nn_fail:
+            return node_dot + '{0} -> {1}'.format(self.name, self.nn_success)
+
+        return node_dot + ' '.join(
             '{0} -> {1} [label="{2}"]'.format(self.name, name, label)
             for (name, label) in zip(names, labels))
+
+    def dot_shape(self):
+        return "Mrecord"
+
+    def dot_color(self):
+        return "beige"
 
     def dot_label_for_success(self):
         return "S"

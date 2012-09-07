@@ -1,5 +1,5 @@
 import tarr.dag
-from tarr.processor import ProcessorFailed
+from tarr.processor import ProcessorFailed, BranchProcessor
 from zope.dottedname.resolve import resolve as dottedname_resolve
 import traceback
 from datetime import datetime, timedelta
@@ -47,4 +47,10 @@ class ProcessorContainer(tarr.dag.Node):
 
     def dot_label_for_failure(self):
         return "F: %d" % self.failure_count
+
+    def dot_shape(self):
+        return "rectangle" if isinstance(self.processor, BranchProcessor) else "Mrecord"
+
+    def dot_color(self):
+        return "deeppink" if isinstance(self.processor, BranchProcessor) else "white"
 

@@ -54,35 +54,39 @@ class TestNode_to_dot(unittest.TestCase):
     # -> STOP: missing edge
     # S, F same: no label
 
-    def test_all_undefined(self):
-        n = m.Node()
-        n.name = 'a_node'
-        self.assertEqual('', n.to_dot())
-
     def test_SF_same(self):
         n = m.Node()
         n.name = 'a_node'
         n.nn_success = n.nn_fail = 'next'
-        self.assertEqual('a_node -> next', n.to_dot())
+        self.assertIn('a_node -> next', n.to_dot())
 
     def test_S_differs_from_F(self):
         n = m.Node()
         n.name = 'a_node'
         n.nn_success = 'b_node'
         n.nn_fail = 'f_node'
-        self.assertEqual('a_node -> b_node [label="S"] a_node -> f_node [label="F"]', n.to_dot())
+
+        dot = n.to_dot()
+        self.assertIn('a_node -> b_node', dot)
+        self.assertIn('a_node -> f_node', dot)
 
     def test_only_S(self):
         n = m.Node()
         n.name = 'a_node'
         n.nn_success = 'b_node'
-        self.assertEqual('a_node -> b_node [label="S"]', n.to_dot())
+        dot = n.to_dot()
+
+        self.assertIn('a_node -> b_node', dot)
+        self.assertIn('"S"', dot)
 
     def test_only_F(self):
         n = m.Node()
         n.name = 'a_node'
         n.nn_fail = 'b_node'
-        self.assertEqual('a_node -> b_node [label="F"]', n.to_dot())
+        dot = n.to_dot()
+
+        self.assertIn('a_node -> b_node', dot)
+        self.assertIn('"F"', dot)
 
 
 class TestDag_to_dot(unittest.TestCase):
