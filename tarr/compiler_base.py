@@ -216,10 +216,12 @@ class Condition(object):
 class Program(Runnable):
 
     instructions = None
+    runner = None
 
-    def __init__(self, instructions):
+    def __init__(self, instructions, labels_with_indices):
         self.instructions = instructions
         self.start_instruction = instructions[0]
+        self.labels_with_indices = labels_with_indices
         self.condition = Condition()
         self.register_condition()
 
@@ -237,6 +239,17 @@ class Program(Runnable):
         for instruction in self.instructions:
             register = getattr(instruction, 'register_condition', noop)
             register(self.condition)
+
+    def sub_programs(self):
+        (label, index) = (None, 0)
+        i = 0
+        while i < len(self.labels_with_indices):
+            (next_label, next_index) = self.labels_with_indices[i]
+            yield (label, self.instructions[index:next_index])
+            (label, index) = (next_label, next_index)
+            i += 1
+
+        yield (label, self.instructions[index:])
 
 
 class Appender(object):
@@ -379,6 +392,7 @@ class Compiler(object):
     control_stack = None
     path = None
 
+    labels_with_indices = []
     previous_labels = None
     linkers = None
 
@@ -386,13 +400,15 @@ class Compiler(object):
     def last_instruction(self):
         return self.instructions[-1]
 
-    def compile(self, program_spec):
+    def __init__(self):
         self.control_stack = []
         self.path = Path()
         self.instructions = list()
+        self.labels_with_indices = []
         self.previous_labels = set()
         self.linkers = dict()
 
+    def compile(self, program_spec):
         for instruction in program_spec:
             compilable = self.compilable(instruction)
             compilable.compile(self)
@@ -406,7 +422,7 @@ class Compiler(object):
         if self.path.is_open:
             raise UnclosedProgramError
 
-        return Program(self.instructions)
+        return Program(self.instructions, self.labels_with_indices)
 
     def compilable(self, instruction):
         if isinstance(instruction, basestring):
@@ -423,6 +439,7 @@ class Compiler(object):
         if label in self.previous_labels:
             raise DuplicateLabelError
 
+        self.labels_with_indices.append((label, len(self.instructions)))
         self.path = Path()
         # can not resolve label references yet, as the content (first instruction) is not known yet
         self.path.set_appender(DefineAppender(self, self.path, label))

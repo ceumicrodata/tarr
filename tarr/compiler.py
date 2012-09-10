@@ -60,9 +60,13 @@ class Program(object):
     def statistics(self):
         return self.runner.statistics
 
+    def sub_programs(self):
+        return self.program.sub_programs()
+
 
 def compile(program_spec):
     ''' program_spec -> program object with .run method, that will collect statistics '''
+    # FIXME: modify tarr.compiler_base.Compiler to take a[n optional?] program_class parameter
     program = compiler_base.Compiler().compile(program_spec)
     runner = StatisticsCollectorRunner(program.condition)
     program.register_runner(runner)

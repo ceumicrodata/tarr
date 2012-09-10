@@ -449,3 +449,53 @@ class Test_Compiler(unittest.TestCase):
                     RETURN,
                 ENDIF,
                 ])
+
+    def test_start_define_label_stores_label_with_index(self):
+        c = m.Compiler()
+        c.instructions = [None] * 4
+
+        label1 = 'label1'
+        c.start_define_label(label1)
+        c.instructions += [None] * 6
+
+        label2 = 'label2'
+        c.start_define_label(label2)
+
+        self.assertEqual([(label1, 4), (label2, 10)], c.labels_with_indices)
+
+
+class Test_Program(unittest.TestCase):
+
+    def test_sub_programs(self):
+        prog = compile([
+            Add1,
+            m.RETURN,
+            m.DEF ('x1'),
+            m.RETURN,
+            m.DEF ('x2'),
+            m.RETURN,
+            m.DEF ('x3'),
+            Add1,
+            Add1,
+            m.RETURN,
+            ])
+
+        sub_programs = iter(prog.sub_programs())
+        sub_program = sub_programs.next()
+        self.assertEqual(None, sub_program[0])
+        self.assertEqual(2, len(sub_program[1])) # Add1, RETURN
+
+        sub_program = sub_programs.next()
+        self.assertEqual('x1', sub_program[0])
+        self.assertEqual(1, len(sub_program[1])) # RETURN
+
+        sub_program = sub_programs.next()
+        self.assertEqual('x2', sub_program[0])
+        self.assertEqual(1, len(sub_program[1])) # RETURN
+
+        sub_program = sub_programs.next()
+        self.assertEqual('x3', sub_program[0])
+        self.assertEqual(3, len(sub_program[1])) # Add1, Add1, RETURN
+
+        with self.assertRaises(StopIteration):
+            sub_programs.next()

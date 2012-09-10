@@ -6,7 +6,7 @@ from tarr.data import Data
 Noop = m.Instruction()
 
 
-class Test_Statistics(unittest.TestCase):
+class Test_Program_statistics(unittest.TestCase):
 
     def prog(self, condition=None):
         RETURN_MAP = {
@@ -128,3 +128,41 @@ class Test_decorators(unittest.TestCase):
 
         self.assertEqualData(Data(id, 'even'), prog.run(Data(id, 0)))
         self.assertEqualData(Data(id, 'odd'), prog.run(Data(id, 1)))
+
+
+# FIXME: derive from compiler_base.Program and test only new functionality + reuse original tests (Liskov), thus remove this duplicate
+class Test_Program_sub_programs(unittest.TestCase):
+
+    def test_sub_programs(self):
+        prog = m.compile([
+            add1,
+            m.RETURN,
+            m.DEF ('x1'),
+            m.RETURN,
+            m.DEF ('x2'),
+            m.RETURN,
+            m.DEF ('x3'),
+            add1,
+            add1,
+            m.RETURN,
+            ])
+
+        sub_programs = iter(prog.sub_programs())
+        sub_program = sub_programs.next()
+        self.assertEqual(None, sub_program[0])
+        self.assertEqual(2, len(sub_program[1])) # add1, RETURN
+
+        sub_program = sub_programs.next()
+        self.assertEqual('x1', sub_program[0])
+        self.assertEqual(1, len(sub_program[1])) # RETURN
+
+        sub_program = sub_programs.next()
+        self.assertEqual('x2', sub_program[0])
+        self.assertEqual(1, len(sub_program[1])) # RETURN
+
+        sub_program = sub_programs.next()
+        self.assertEqual('x3', sub_program[0])
+        self.assertEqual(3, len(sub_program[1])) # add1, add1, RETURN
+
+        with self.assertRaises(StopIteration):
+            sub_programs.next()
