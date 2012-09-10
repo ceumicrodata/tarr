@@ -51,6 +51,7 @@ class Test_parse_args(unittest.TestCase):
 
     def test_parsed_args_is_pickleable(self):
         args = m.parse_args('parallel_process_job jobname'.split())
+        pickle.dumps(args)
 
     def test_process_batch(self):
         # parallel processing is working with pickle - or similar marshalling

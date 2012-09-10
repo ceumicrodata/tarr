@@ -1,6 +1,6 @@
 from tarr import compiler_base
 from tarr import model
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 from .compiler_base import (
