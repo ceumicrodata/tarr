@@ -1,7 +1,6 @@
 import unittest
 
 from tarr import dag as m # odule
-from tarr import ProcessorFailed
 
 
 TEST_GOOD_CONFIG = '''
@@ -188,11 +187,12 @@ class TestDagConfig(unittest.TestCase):
 
         try:
             reader.from_string(config)
-            raise ProcessorFailed
         except Exception as e:
             emsg = str(e).lower()
             for msg in messages:
                 self.assertIn(msg, emsg)
+            return
+        self.fail()
 
     def test_missing_node__from_string__dies(self):
         self.assert_from_string_fails(TEST_CONFIG_MISSING_DEFS, 'undefined nodes')

@@ -2,7 +2,7 @@ import unittest
 import mock
 
 from tarr import container as m # odule
-from tarr import ProcessorFailed
+from tarr.processor import ProcessorFailed
 from tarr.processor import Processor
 from tarr.data import Data
 
