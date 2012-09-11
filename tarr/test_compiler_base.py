@@ -4,8 +4,7 @@ from tarr.compiler_base import (
     Instruction, BranchingInstruction,
     RETURN, RETURN_TRUE, RETURN_FALSE,
     DEF, IF, ELSE, ENDIF,
-    DuplicateLabelError, UndefinedLabelError, BackwardReferenceError, FallOverOnDefineError, UnclosedProgramError, MissingEndIfError, MultipleElseError,
-    Compiler, Runner)
+    DuplicateLabelError, UndefinedLabelError, BackwardReferenceError, FallOverOnDefineError, UnclosedProgramError, MissingEndIfError, MultipleElseError)
 
 
 class Add1(Instruction):
@@ -217,48 +216,69 @@ class Test_Path(unittest.TestCase):
         self.assertEqual(i2, i1.next_instruction)
 
 
-def compile(program_spec):
-    program = Compiler().compile(program_spec)
-    program.register_runner(Runner())
-    return program
-
-
 class Test_Compiler(unittest.TestCase):
 
+    def test_start_define_label_stores_label_with_index(self):
+        c = m.Compiler()
+        c.instructions = [None] * 4
+
+        label1 = 'label1'
+        c.start_define_label(label1)
+        c.instructions += [None] * 6
+
+        label2 = 'label2'
+        c.start_define_label(label2)
+
+        self.assertEqual([(label1, 4), (label2, 10)], c.labels_with_indices)
+
+
+class Test_Program(unittest.TestCase):
+
+    PROGRAM_CLASS = m.Program
+
+    def program(self, program_spec):
+        return self.PROGRAM_CLASS(program_spec)
+
     def test_instruction_sequence(self):
-        prog = compile([Add1, Div2, RETURN])
+        prog = self.program([Add1, Div2, RETURN])
         self.assertEqual(2, prog.run(3))
 
     def test_condition_output1(self):
-        prog = compile([IsOdd, RETURN])
+        prog = self.program([IsOdd, RETURN])
         self.assertEqual(3, prog.run(3))
         self.assertTrue(prog.condition.value)
 
     def test_condition_output2(self):
-        prog = compile([IsOdd, RETURN])
+        prog = self.program([IsOdd, RETURN])
         self.assertEqual(4, prog.run(4))
         self.assertFalse(prog.condition.value)
 
     def test_duplicate_definition_of_label_is_not_compilable(self):
-        self.assertRaises(DuplicateLabelError, compile, [RETURN, DEF('label'), Noop, RETURN, DEF('label'), Noop])
+        with self.assertRaises(DuplicateLabelError):
+            self.program([RETURN, DEF('label'), Noop, RETURN, DEF('label'), Noop])
 
     def test_incomplete_program_is_not_compilable(self):
-        self.assertRaises(UndefinedLabelError, compile, ['label', RETURN])
+        with self.assertRaises(UndefinedLabelError):
+            self.program(['label', RETURN])
 
     def test_incomplete_before_label_is_not_compilable(self):
-        self.assertRaises(FallOverOnDefineError, compile, [Noop, DEF('label'), Noop, RETURN])
+        with self.assertRaises(FallOverOnDefineError):
+            self.program([Noop, DEF('label'), Noop, RETURN])
 
     def test_label_definition_within_label_def_is_not_compilable(self):
-        self.assertRaises(FallOverOnDefineError, compile, [RETURN, DEF('label'), DEF('label2'), RETURN])
+        with self.assertRaises(FallOverOnDefineError):
+            self.program([RETURN, DEF('label'), DEF('label2'), RETURN])
 
     def test_program_without_closing_return_is_not_compilable(self):
-        self.assertRaises(UnclosedProgramError, compile, [Noop])
+        with self.assertRaises(UnclosedProgramError):
+            self.program([Noop])
 
     def test_backward_reference_is_not_compilable(self):
-        self.assertRaises(BackwardReferenceError, compile, [RETURN, DEF('label'), Noop, 'label'])
+        with self.assertRaises(BackwardReferenceError):
+            self.program([RETURN, DEF('label'), Noop, 'label'])
 
     def test_branch_on_yes(self):
-        prog = compile([
+        prog = self.program([
             IF (IsOdd),
                 Add1,
             ELSE,
@@ -275,7 +295,7 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(6, prog.run(4))
 
     def test_branch_on_no(self):
-        prog = compile([
+        prog = self.program([
             IF (IsOdd),
                 Add1,
                 Add1,
@@ -292,7 +312,7 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(5, prog.run(3))
 
     def test_string_as_call_symbol(self):
-        prog = compile([
+        prog = self.program([
             '+1', '+2', RETURN,
 
             DEF('+2'), '+1', '+1', RETURN,
@@ -301,13 +321,15 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(3, prog.run(0))
 
     def test_compilation_with_missing_ENDIF_is_not_possible(self):
-        self.assertRaises(MissingEndIfError, compile, [IF (IsOdd), RETURN])
+        with self.assertRaises(MissingEndIfError):
+            self.program([IF (IsOdd), RETURN])
 
     def test_compilation_with_multiple_ELSE_is_not_possible(self):
-        self.assertRaises(MultipleElseError, compile, [IF (IsOdd), ELSE, ELSE, ENDIF, RETURN])
+        with self.assertRaises(MultipleElseError):
+            self.program([IF (IsOdd), ELSE, ELSE, ENDIF, RETURN])
 
     def test_IF(self):
-        prog = compile([
+        prog = self.program([
             IF (IsOdd),
                 Add1,
             ENDIF,
@@ -319,7 +341,7 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(3, prog.run(2))
 
     def test_ELSE(self):
-        prog = compile([
+        prog = self.program([
             IF (IsOdd),
             ELSE,
                 Add1,
@@ -332,7 +354,7 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(4, prog.run(2))
 
     def test_IF_ELSE(self):
-        prog = compile([
+        prog = self.program([
             IF (IsOdd),
                 Add1,
             ELSE,
@@ -347,7 +369,7 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(5, prog.run(2))
 
     def test_embedded_IFs(self):
-        prog = compile([
+        prog = self.program([
             IF (IsOdd),
                 Add1,
                 Div2,
@@ -369,7 +391,7 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(2, prog.run(5))
 
     def test_macro_return_yes(self):
-        prog = compile(
+        prog = self.program(
             [
             IF ('odd?'),
                 Add1,
@@ -388,7 +410,7 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(4, prog.run(3))
 
     def test_macro_return_no(self):
-        prog = compile(
+        prog = self.program(
             [
             IF ('odd?'),
                 Add1,
@@ -428,7 +450,7 @@ class Test_Compiler(unittest.TestCase):
     ]
 
     def test_macro_return(self):
-        prog = compile(self.complex_prog_spec)
+        prog = self.program(self.complex_prog_spec)
 
         self.assertEqual(2, prog.run(1))
         self.assertEqual(2, prog.run(2))
@@ -436,38 +458,22 @@ class Test_Compiler(unittest.TestCase):
         self.assertEqual(4, prog.run(4))
 
     def test_instruction_index(self):
-        prog = compile(self.complex_prog_spec)
+        prog = self.program(self.complex_prog_spec)
 
         indices = [i.index for i in prog.instructions]
         self.assertEqual(range(len(prog.instructions)), indices)
 
     def test_joining_into_a_closed_path_reopens_it(self):
         with self.assertRaises(UnclosedProgramError):
-            compile(
+            self.program(
                 [
                 IF(IsOdd),
                     RETURN,
                 ENDIF,
                 ])
 
-    def test_start_define_label_stores_label_with_index(self):
-        c = m.Compiler()
-        c.instructions = [None] * 4
-
-        label1 = 'label1'
-        c.start_define_label(label1)
-        c.instructions += [None] * 6
-
-        label2 = 'label2'
-        c.start_define_label(label2)
-
-        self.assertEqual([(label1, 4), (label2, 10)], c.labels_with_indices)
-
-
-class Test_Program(unittest.TestCase):
-
     def test_sub_programs(self):
-        prog = compile([
+        prog = self.program([
             Add1,
             m.RETURN,
             m.DEF ('x1'),

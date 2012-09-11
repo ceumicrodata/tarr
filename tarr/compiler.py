@@ -44,36 +44,17 @@ class StatisticsCollectorRunner(compiler_base.Runner):
             self.statistics.append(stat)
 
 
-class Program(object):
+class Program(compiler_base.Program):
 
-    program = None
-    runner = None
-
-    def __init__(self, program, runner):
-        self.program = program
-        self.runner = runner
-
-    def run(self, state):
-        return self.program.run(state)
+    def make_runner(self):
+        return StatisticsCollectorRunner(self.condition)
 
     @property
     def statistics(self):
         return self.runner.statistics
 
-    def sub_programs(self):
-        return self.program.sub_programs()
 
-
-def compile(program_spec):
-    ''' program_spec -> program object with .run method, that will collect statistics '''
-    # FIXME: modify tarr.compiler_base.Compiler to take a[n optional?] program_class parameter
-    program = compiler_base.Compiler().compile(program_spec)
-    runner = StatisticsCollectorRunner(program.condition)
-    program.register_runner(runner)
-    return Program(program, runner)
-
-
-# decorators to make simple functions into a Instruction
+# decorators to make simple functions into Instructions
 
 class TarrRuleInstruction(Instruction):
 

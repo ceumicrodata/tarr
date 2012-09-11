@@ -383,8 +383,6 @@ class Compiler(object):
         if self.path.is_open:
             raise UnclosedProgramError
 
-        return Program(self.instructions, self.labels_with_indices)
-
     def compilable(self, instruction):
         if isinstance(instruction, basestring):
             return Call(instruction)
@@ -424,15 +422,28 @@ class Program(Runnable):
     instructions = None
     runner = None
 
-    def __init__(self, instructions, labels_with_indices):
+    def __init__(self, program_spec):
+        self.labels_with_indices = None
+        self.compile(program_spec)
+
+    def compile(self, program_spec):
+        compiler = Compiler()
+        compiler.compile(program_spec)
+        self.init(compiler.instructions, compiler.labels_with_indices)
+
+    def init(self, instructions, labels_with_indices):
         self.instructions = instructions
         self.labels_with_indices = labels_with_indices
         self.condition = Condition()
         self.register_condition()
+        self.register_runner(self.make_runner())
 
     @property
     def start_instruction(self):
         return self.instructions[0]
+
+    def make_runner(self):
+        return Runner()
 
     def register_runner(self, runner):
         self.runner = runner
