@@ -42,6 +42,11 @@ class Instruction(Compilable):
         return self.__class__()
 
 
+class Condition(object):
+
+    value = True
+
+
 class ConditionalInstruction(Instruction):
 
     condition = None
@@ -206,50 +211,6 @@ class CompileEndIf(Compilable):
         compiler.path.join(frame.false_path)
 
 ENDIF = CompileEndIf()
-
-
-class Condition(object):
-
-    value = True
-
-
-class Program(Runnable):
-
-    instructions = None
-    runner = None
-
-    def __init__(self, instructions, labels_with_indices):
-        self.instructions = instructions
-        self.start_instruction = instructions[0]
-        self.labels_with_indices = labels_with_indices
-        self.condition = Condition()
-        self.register_condition()
-
-    def register_runner(self, runner):
-        self.runner = runner
-        def noop(runner):
-            pass
-        for instruction in self.instructions:
-            register = getattr(instruction, 'register_runner', noop)
-            register(self.runner)
-
-    def register_condition(self):
-        def noop(condition):
-            pass
-        for instruction in self.instructions:
-            register = getattr(instruction, 'register_condition', noop)
-            register(self.condition)
-
-    def sub_programs(self):
-        (label, index) = (None, 0)
-        i = 0
-        while i < len(self.labels_with_indices):
-            (next_label, next_index) = self.labels_with_indices[i]
-            yield (label, self.instructions[index:next_index])
-            (label, index) = (next_label, next_index)
-            i += 1
-
-        yield (label, self.instructions[index:])
 
 
 class Appender(object):
@@ -456,3 +417,45 @@ class Compiler(object):
             raise BackwardReferenceError
 
         self.linkers.setdefault(label, []).append(linker)
+
+
+class Program(Runnable):
+
+    instructions = None
+    runner = None
+
+    def __init__(self, instructions, labels_with_indices):
+        self.instructions = instructions
+        self.labels_with_indices = labels_with_indices
+        self.condition = Condition()
+        self.register_condition()
+
+    @property
+    def start_instruction(self):
+        return self.instructions[0]
+
+    def register_runner(self, runner):
+        self.runner = runner
+        def noop(runner):
+            pass
+        for instruction in self.instructions:
+            register = getattr(instruction, 'register_runner', noop)
+            register(self.runner)
+
+    def register_condition(self):
+        def noop(condition):
+            pass
+        for instruction in self.instructions:
+            register = getattr(instruction, 'register_condition', noop)
+            register(self.condition)
+
+    def sub_programs(self):
+        (label, index) = (None, 0)
+        i = 0
+        while i < len(self.labels_with_indices):
+            (next_label, next_index) = self.labels_with_indices[i]
+            yield (label, self.instructions[index:next_index])
+            (label, index) = (next_label, next_index)
+            i += 1
+
+        yield (label, self.instructions[index:])
