@@ -506,3 +506,58 @@ class Test_Program(unittest.TestCase):
 
         with self.assertRaises(StopIteration):
             sub_programs.next()
+
+    def test_visit(self):
+        prog = self.program([
+            'x', m.RETURN,
+
+            m.DEF ('x'),
+                m.IF (IsOdd),
+                    Add1,
+                m.ENDIF,
+                m.RETURN
+            ])
+
+        remembering_visitor = RememberingVisitor()
+
+        prog.accept(remembering_visitor)
+
+        i = prog.instructions
+        self.assertEqual([
+            ('subprogram', None),
+                ('call', i[0]),
+                ('return', i[1]),
+            ('end', None),
+
+            ('subprogram', 'x'),
+                ('branch', i[2]),
+                ('instruction', i[3]),
+                ('return', i[4]),
+            ('end', 'x')
+            ], remembering_visitor.calls)
+
+
+class RememberingVisitor(m.ProgramVisitor):
+
+    calls = None
+
+    def __init__(self):
+        self.calls = []
+
+    def enter_subprogram(self, label, instructions):
+        self.calls.append(('subprogram', label))
+
+    def leave_subprogram(self, label):
+        self.calls.append(('end', label))
+
+    def visit_call(self, i_call):
+        self.calls.append(('call', i_call))
+
+    def visit_return(self, i_return):
+        self.calls.append(('return', i_return))
+
+    def visit_instruction(self, instruction):
+        self.calls.append(('instruction', instruction))
+
+    def visit_branch(self, i_branch):
+        self.calls.append(('branch', i_branch))

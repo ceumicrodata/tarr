@@ -30,20 +30,26 @@ class InstructionBase(Compilable):
 
     index = None
 
+    # run time
+    def run(self, runner, state):
+        return state
+
     def next_instruction(self, exit_status):
         return None
 
+    # compile time
     def set_next_instruction(self, instruction):
         pass
-
-    def run(self, runner, state):
-        return state
 
     def compile(self, compiler):
         compiler.add_instruction(self.clone())
 
     def clone(self):
         return self.__class__()
+
+    # visitor
+    def accept(self, visitor):
+        pass
 
 
 class Instruction(InstructionBase):
@@ -55,6 +61,9 @@ class Instruction(InstructionBase):
 
     def set_next_instruction(self, instruction):
         self._next_instruction = instruction
+
+    def accept(self, visitor):
+        visitor.visit_instruction(self)
 
 
 class Return(InstructionBase):
@@ -79,6 +88,9 @@ class Return(InstructionBase):
 
     def clone(self):
         return self.__class__(self.return_value)
+
+    def accept(self, visitor):
+        visitor.visit_return(self)
 
 
 # FIXME: RETURN -> RETURN_WITH_CURRENT_CONDITION
@@ -108,6 +120,9 @@ class BranchingInstruction(InstructionBase):
 
     def set_instruction_on_no(self, instruction):
         self.instruction_on_no = instruction
+
+    def accept(self, visitor):
+        visitor.visit_branch(self)
 
 
 class Define(Compilable):
@@ -166,6 +181,9 @@ class Call(BranchingInstruction):
 
     def clone(self):
         return self.__class__(self.label)
+
+    def accept(self, visitor):
+        visitor.visit_call(self)
 
 
 class CompileIf(Compilable):
@@ -408,6 +426,27 @@ class Compiler(object):
         self.linkers.setdefault(label, []).append(linker)
 
 
+class ProgramVisitor(object):
+
+    def enter_subprogram(self, label, instructions):
+        pass
+
+    def leave_subprogram(self, label):
+        pass
+
+    def visit_call(self, i_call):
+        pass
+
+    def visit_return(self, i_return):
+        pass
+
+    def visit_instruction(self, instruction):
+        pass
+
+    def visit_branch(self, i_branch):
+        pass
+
+
 class Program(object):
 
     instructions = None
@@ -447,3 +486,10 @@ class Program(object):
             i += 1
 
         yield (label, self.instructions[index:])
+
+    def accept(self, visitor):
+        for (label, instructions) in self.sub_programs():
+            visitor.enter_subprogram(label, instructions)
+            for i in instructions:
+                i.accept(visitor)
+            visitor.leave_subprogram(label)
