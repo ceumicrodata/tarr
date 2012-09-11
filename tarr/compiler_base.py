@@ -26,13 +26,17 @@ class Compilable(object):
         pass
 
 
-class Instruction(Compilable):
+class InstructionBase(Compilable):
 
     index = None
 
-    next_instruction = None
+    def next_instruction(self, exit_status):
+        return None
 
-    def run(self, state):
+    def set_next_instruction(self, instruction):
+        pass
+
+    def run(self, runner, state):
         return state
 
     def compile(self, compiler):
@@ -42,36 +46,30 @@ class Instruction(Compilable):
         return self.__class__()
 
 
-class Condition(object):
+class Instruction(InstructionBase):
 
-    value = True
+    _next_instruction = None
 
+    def next_instruction(self, exit_status):
+        return self._next_instruction
 
-class ConditionalInstruction(Instruction):
-
-    condition = None
-
-    def register_condition(self, condition):
-        self.condition = condition
+    def set_next_instruction(self, instruction):
+        self._next_instruction = instruction
 
 
-class Return(ConditionalInstruction):
+class Return(InstructionBase):
 
     return_value = None
+
     def __init__(self, return_value=None):
         self.return_value = return_value
 
-    @property
-    def next_instruction(self):
+    def next_instruction(self, exit_status):
         return None
 
-    @next_instruction.setter
-    def next_instruction(self, instruction):
-        pass
-
-    def run(self, state):
+    def run(self, runner, state):
         if self.return_value is not None:
-            self.condition.value = self.return_value
+            runner.set_exit_status(self.return_value)
 
         return state
 
@@ -89,20 +87,19 @@ RETURN_TRUE = Return(return_value=True)
 RETURN_FALSE = Return(return_value=False)
 
 
-class BranchingInstruction(ConditionalInstruction):
+class BranchingInstruction(InstructionBase):
 
     instruction_on_yes = None
     instruction_on_no = None
 
-    @property
-    def next_instruction(self):
-        if self.condition.value:
+    def next_instruction(self, exit_status):
+        if exit_status:
             return self.instruction_on_yes
         return self.instruction_on_no
 
-    @next_instruction.setter
-    def next_instruction(self, instruction):
-        self.instruction_on_yes = instruction
+    def set_next_instruction(self, instruction):
+        if self.instruction_on_yes is None:
+            self.instruction_on_yes = instruction
         if self.instruction_on_no is None:
             self.instruction_on_no = instruction
 
@@ -126,45 +123,39 @@ class Define(Compilable):
 
         compiler.start_define_label(self.label)
 
-def DEF(label):
-    return Define(label)
+DEF = Define
 
 
 class Runner(object):
 
-    def run_instruction(self, instruction, state):
-        return instruction.run(state)
+    exit_status = None
 
-    def run(self, start_instruction, condition, state):
-        condition.value = True
+    def set_exit_status(self, value):
+        self.exit_status = value
+
+    def run_instruction(self, instruction, state):
+        return instruction.run(self, state)
+
+    def run(self, start_instruction, state):
         instruction = start_instruction
 
         while instruction:
             state = self.run_instruction(instruction, state)
-            instruction = instruction.next_instruction
+            instruction = instruction.next_instruction(self.exit_status)
 
         return state
 
 
-class Runnable(object):
-
-    start_instruction = None
-    condition = None
-    runner = None
-
-    def register_runner(self, runner):
-        self.runner = runner
-
-    def run(self, state):
-        return self.runner.run(self.start_instruction, self.condition, state)
-
-
-class Call(Runnable, BranchingInstruction):
+class Call(BranchingInstruction):
 
     label = None
+    start_instruction = None
 
     def __init__(self, label):
         self.label = label
+
+    def run(self, runner, state):
+        return runner.run(self.start_instruction, state)
 
     def compile(self, compiler):
         super(Call, self).compile(compiler)
@@ -231,7 +222,7 @@ class InstructionAppender(Appender):
         self.last_instruction = instruction
 
     def append(self, instruction):
-        self.last_instruction.next_instruction = instruction
+        self.last_instruction.set_next_instruction(instruction)
         self.last_instruction = instruction
 
 
@@ -417,7 +408,7 @@ class Compiler(object):
         self.linkers.setdefault(label, []).append(linker)
 
 
-class Program(Runnable):
+class Program(object):
 
     instructions = None
     runner = None
@@ -425,6 +416,9 @@ class Program(Runnable):
     def __init__(self, program_spec):
         self.labels_with_indices = None
         self.compile(program_spec)
+
+    def run(self, state):
+        return self.runner.run(self.start_instruction, state)
 
     def compile(self, program_spec):
         compiler = Compiler()
@@ -434,9 +428,7 @@ class Program(Runnable):
     def init(self, instructions, labels_with_indices):
         self.instructions = instructions
         self.labels_with_indices = labels_with_indices
-        self.condition = Condition()
-        self.register_condition()
-        self.register_runner(self.make_runner())
+        self.runner = self.make_runner()
 
     @property
     def start_instruction(self):
@@ -444,21 +436,6 @@ class Program(Runnable):
 
     def make_runner(self):
         return Runner()
-
-    def register_runner(self, runner):
-        self.runner = runner
-        def noop(runner):
-            pass
-        for instruction in self.instructions:
-            register = getattr(instruction, 'register_runner', noop)
-            register(self.runner)
-
-    def register_condition(self):
-        def noop(condition):
-            pass
-        for instruction in self.instructions:
-            register = getattr(instruction, 'register_condition', noop)
-            register(self.condition)
 
     def sub_programs(self):
         (label, index) = (None, 0)

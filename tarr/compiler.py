@@ -12,10 +12,8 @@ from .compiler_base import (
 class StatisticsCollectorRunner(compiler_base.Runner):
 
     statistics = None
-    condition = None
 
-    def __init__(self, condition):
-        self.condition = condition
+    def __init__(self):
         self.statistics = []
 
     def run_instruction(self, instruction, state):
@@ -25,9 +23,9 @@ class StatisticsCollectorRunner(compiler_base.Runner):
         stat = self.statistics[instruction.index]
         stat.item_count += 1
 
-        state = instruction.run(state)
+        state = instruction.run(self, state)
 
-        if self.condition.value:
+        if self.exit_status:
             stat.success_count += 1
         else:
             stat.failure_count += 1
@@ -47,7 +45,7 @@ class StatisticsCollectorRunner(compiler_base.Runner):
 class Program(compiler_base.Program):
 
     def make_runner(self):
-        return StatisticsCollectorRunner(self.condition)
+        return StatisticsCollectorRunner()
 
     @property
     def statistics(self):
@@ -61,7 +59,7 @@ class TarrRuleInstruction(Instruction):
     def __init__(self, func):
         self.func = func
 
-    def run(self, data):
+    def run(self, runner, data):
         data.payload = self.func(data.payload)
         return data
 
@@ -89,8 +87,8 @@ class TarrBranchInstruction(BranchingInstruction):
     def __init__(self, func):
         self.func = func
 
-    def run(self, data):
-        self.condition.value = self.func(data.payload)
+    def run(self, runner, data):
+        runner.set_exit_status(self.func(data.payload))
         return data
 
     def clone(self):

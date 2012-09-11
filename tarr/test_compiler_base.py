@@ -9,9 +9,8 @@ from tarr.compiler_base import (
 
 class Add1(Instruction):
 
-    def run(self, state):
+    def run(self, runner, state):
         result = state + 1
-        print result
         return result
 
 Add1 = Add1()
@@ -19,7 +18,7 @@ Add1 = Add1()
 
 class Div2(Instruction):
 
-    def run(self, state):
+    def run(self, runner, state):
         return state / 2
 
 Div2 = Div2()
@@ -27,9 +26,8 @@ Div2 = Div2()
 
 class IsOdd(BranchingInstruction):
 
-    def run(self, state):
-        self.condition.value = (state % 2 == 1)
-        print self.condition.value
+    def run(self, runner, state):
+        runner.set_exit_status(state % 2 == 1)
         return state
 
 IsOdd = IsOdd()
@@ -49,6 +47,9 @@ class Noop(Instruction):
 Noop = Noop()
 
 
+def next_instruction(i):
+    return i.next_instruction(exit_status=True)
+
 class Test_Path(unittest.TestCase):
 
     def test_NewPathAppender(self):
@@ -60,7 +61,7 @@ class Test_Path(unittest.TestCase):
         path.append(i1)
         path.append(i2)
 
-        self.assertEqual(i2, i1.next_instruction)
+        self.assertEqual(i2, next_instruction(i1))
 
     def test_InstructionAppender(self):
         # append
@@ -72,7 +73,7 @@ class Test_Path(unittest.TestCase):
         path.append(i1)
         path.append(i2)
 
-        self.assertEqual(i1, i0.next_instruction)
+        self.assertEqual(i1, next_instruction(i0))
 
     def test_join(self):
         # p1 p1i1   p1i2
@@ -90,8 +91,8 @@ class Test_Path(unittest.TestCase):
 
         path1.append(p1i2)
 
-        self.assertEqual(p1i2, p1i1.next_instruction)
-        self.assertEqual(p1i2, p2i1.next_instruction)
+        self.assertEqual(p1i2, next_instruction(p1i1))
+        self.assertEqual(p1i2, next_instruction(p2i1))
 
     def test_join_a_joined_path(self):
         # p1 p1i1   p1i2
@@ -117,9 +118,9 @@ class Test_Path(unittest.TestCase):
 
         path1.append(p1i2)
 
-        self.assertEqual(p1i2, p1i1.next_instruction)
-        self.assertEqual(p1i2, p2i1.next_instruction)
-        self.assertEqual(p1i2, p3i1.next_instruction)
+        self.assertEqual(p1i2, next_instruction(p1i1))
+        self.assertEqual(p1i2, next_instruction(p2i1))
+        self.assertEqual(p1i2, next_instruction(p3i1))
 
     def test_join_to_a_closed_path(self):
         # p1 RETURN   p1i2
@@ -139,7 +140,7 @@ class Test_Path(unittest.TestCase):
 
         path1.append(p1i2)
 
-        self.assertEqual(p1i2, p2i1.next_instruction)
+        self.assertEqual(p1i2, next_instruction(p2i1))
 
     def test_TrueBranchAppender(self):
         bi = m.BranchingInstruction()
@@ -176,7 +177,7 @@ class Test_Path(unittest.TestCase):
         path.append(i2)
 
         self.assertEqual(i1, bi.instruction_on_yes)
-        self.assertEqual(i2, i1.next_instruction)
+        self.assertEqual(i2, next_instruction(i1))
 
     def test_FalseBranchAppender(self):
         bi = m.BranchingInstruction()
@@ -213,7 +214,7 @@ class Test_Path(unittest.TestCase):
         path.append(i2)
 
         self.assertEqual(i1, bi.instruction_on_no)
-        self.assertEqual(i2, i1.next_instruction)
+        self.assertEqual(i2, next_instruction(i1))
 
 
 class Test_Compiler(unittest.TestCase):
@@ -246,12 +247,12 @@ class Test_Program(unittest.TestCase):
     def test_condition_output1(self):
         prog = self.program([IsOdd, RETURN])
         self.assertEqual(3, prog.run(3))
-        self.assertTrue(prog.condition.value)
+        self.assertTrue(prog.runner.exit_status)
 
     def test_condition_output2(self):
         prog = self.program([IsOdd, RETURN])
         self.assertEqual(4, prog.run(4))
-        self.assertFalse(prog.condition.value)
+        self.assertFalse(prog.runner.exit_status)
 
     def test_duplicate_definition_of_label_is_not_compilable(self):
         with self.assertRaises(DuplicateLabelError):
