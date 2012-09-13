@@ -23,6 +23,91 @@ def odd(n):
     return n % 2 == 1
 
 
+TEST_TO_TEXT_WITHOUT_STATISTICS = (
+'''   0 CALL "su"bprogram"
+       # True  -> 1
+       # False -> 1
+   1 RETURN
+END OF MAIN PROGRAM
+
+DEF ("su"bprogram")
+   2 odd
+       # True  -> 3
+       # False -> 4
+   3 add1
+   4 RETURN True
+END # su"bprogram''')
+
+TEST_TO_TEXT_WITH_STATISTICS = (
+'''   0 CALL "su"bprogram"
+       # True  -> 1   (*1)
+       # False -> 1   (*0)
+   1 RETURN   (*1)
+END OF MAIN PROGRAM
+
+DEF ("su"bprogram")
+   2 odd
+       # True  -> 3   (*0)
+       # False -> 4   (*1)
+   3 add1
+   4 RETURN True   (*1)
+END # su"bprogram''')
+
+TEST_TO_DOT_WITHOUT_STATISTICS = (
+r'''digraph {
+
+compound = true;
+
+subgraph "cluster_None" {
+    node_0 [label="CALL su\"bprogram"];
+    node_0 -> node_1 [label="True"];
+    node_0 -> node_1 [label="False"];
+    node_1 [label="RETURN"];
+}
+
+subgraph "cluster_su\"bprogram" {
+    label = "su\"bprogram";
+
+    node_2 [label="odd"];
+    node_2 -> node_3 [label="True"];
+    node_2 -> node_4 [label="False"];
+    node_3 [label="add1"];
+    node_3 -> node_4;
+    node_4 [label="RETURN True"];
+}
+
+// inter-cluster-edges
+    node_0 -> node_2;
+}''')
+
+TEST_TO_DOT_WITH_STATISTICS = (
+r'''digraph {
+
+compound = true;
+
+subgraph "cluster_None" {
+    node_0 [label="CALL su\"bprogram"];
+    node_0 -> node_1 [label="True: 1"];
+    node_0 -> node_1 [label="False: 0"];
+    node_1 [label="RETURN: 1"];
+}
+
+subgraph "cluster_su\"bprogram" {
+    label = "su\"bprogram";
+
+    node_2 [label="odd"];
+    node_2 -> node_3 [label="True: 0"];
+    node_2 -> node_4 [label="False: 1"];
+    node_3 [label="add1"];
+    node_3 -> node_4;
+    node_4 [label="RETURN True: 1"];
+}
+
+// inter-cluster-edges
+    node_0 -> node_2;
+}''')
+
+
 class Test_Program(tarr.test_compiler_base.Test_Program):
 
     # verify, that the functionality of the parent is intact - Liskov's substitution principle
@@ -31,6 +116,60 @@ class Test_Program(tarr.test_compiler_base.Test_Program):
     # the compiler.Program class, not with compiler_base.Program class
 
     PROGRAM_CLASS = m.Program
+
+
+class Test_Program_visualization(unittest.TestCase):
+
+    visualized_program_spec = [
+        'su"bprogram', # name contains " to check dot escape
+        m.RETURN,
+
+        m.DEF ('su"bprogram'),
+            m.IF (odd),
+                add1,
+            m.ENDIF,
+        m.RETURN_TRUE
+    ]
+
+    def program(self):
+        return m.Program(self.visualized_program_spec)
+
+    def assertEqualText(self, expected, actual):
+        if expected != actual:
+            self.assertEqual(expected.splitlines(), actual.splitlines()) # convert to list of lines and compare them
+            self.fail('output differ from expected in whitespace stripped by .splitlines()')
+
+    def test_to_text_without_statistics(self):
+        prog = self.program()
+
+        prog.run(Data(id, 2))
+        text = prog.to_text()
+
+        self.assertEqualText(TEST_TO_TEXT_WITHOUT_STATISTICS, text)
+
+    def test_to_text_with_statistics(self):
+        prog = self.program()
+
+        prog.run(Data(id, 2))
+        text = prog.to_text(with_statistics=True)
+
+        self.assertEqualText(TEST_TO_TEXT_WITH_STATISTICS, text)
+
+    def test_to_dot_without_statistics(self):
+        prog = self.program()
+
+        prog.run(Data(id, 2))
+        text = prog.to_dot()
+
+        self.assertEqualText(TEST_TO_DOT_WITHOUT_STATISTICS, text)
+
+    def test_to_dot_with_statistics(self):
+        prog = self.program()
+
+        prog.run(Data(id, 2))
+        text = prog.to_dot(with_statistics=True)
+
+        self.assertEqualText(TEST_TO_DOT_WITH_STATISTICS, text)
 
 
 class Test_Program_statistics(unittest.TestCase):

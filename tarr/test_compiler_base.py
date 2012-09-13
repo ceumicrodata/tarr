@@ -507,8 +507,8 @@ class Test_Program(unittest.TestCase):
         with self.assertRaises(StopIteration):
             sub_programs.next()
 
-    def test_visit(self):
-        prog = self.program([
+    def program_for_visiting_with_all_features(self):
+        return self.program([
             'x', m.RETURN,
 
             m.DEF ('x'),
@@ -517,6 +517,16 @@ class Test_Program(unittest.TestCase):
                 m.ENDIF,
                 m.RETURN
             ])
+
+    def check_visitor(self, visitor):
+        prog = self.program_for_visiting_with_all_features()
+        prog.accept(visitor)
+
+    def test_remembering_visitor_is_an_accepted_visitor(self):
+        self.check_visitor(RememberingVisitor())
+
+    def test_visit(self):
+        prog = self.program_for_visiting_with_all_features()
 
         remembering_visitor = RememberingVisitor()
 
