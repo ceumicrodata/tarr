@@ -6,6 +6,22 @@ import tarr.test_compiler_base
 
 Noop = m.Instruction()
 
+@m.rule
+def add1(n):
+    return n + 1
+
+@m.rule
+def const_odd(any):
+    return 'odd'
+
+@m.rule
+def const_even(any):
+    return 'even'
+
+@m.branch
+def odd(n):
+    return n % 2 == 1
+
 
 class Test_Program(tarr.test_compiler_base.Test_Program):
 
@@ -78,23 +94,6 @@ class Test_Program_statistics(unittest.TestCase):
         run_time3 = stat.run_time
 
         self.assertLess(run_time2, run_time3)
-
-
-@m.rule
-def add1(n):
-    return n + 1
-
-@m.rule
-def const_odd(any):
-    return 'odd'
-
-@m.rule
-def const_even(any):
-    return 'even'
-
-@m.branch
-def odd(n):
-    return n % 2 == 1
 
 
 class Test_decorators(unittest.TestCase):
