@@ -125,6 +125,10 @@ class NodeStatistic(Base):
         self.failure_count = 0
         self.run_time = timedelta()
 
+    @property
+    def had_exception(self):
+        return self.item_count > self.success_count + self.failure_count
+
     @staticmethod
     def merge(into, from_stat):
         into.name = from_stat.node_name

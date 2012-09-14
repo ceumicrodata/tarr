@@ -23,6 +23,14 @@ def odd(n):
     return n % 2 == 1
 
 
+class WellKnownException(Exception):
+    pass
+
+@m.rule
+def die(param):
+    raise WellKnownException(param)
+
+
 TEST_TO_TEXT_WITHOUT_STATISTICS = (
 '''   0 CALL "su"bprogram"
        # True  -> 1
@@ -233,6 +241,62 @@ class Test_Program_statistics(unittest.TestCase):
         run_time3 = stat.run_time
 
         self.assertLess(run_time2, run_time3)
+
+    def die_prog(self):
+        prog = m.Program([die, m.RETURN])
+        prog.runner.ensure_statistics(1)
+        return prog
+
+    def run_and_expect_exception(self, prog):
+        try:
+            prog.run(Data(None, None))
+        except WellKnownException:
+            # expected
+            return
+        else:
+            self.fail('expected a WellKnownException from prog.run!')
+
+    def test_on_exception_item_count_is_incremented(self):
+        prog = self.die_prog()
+        self.assertEqual(0, prog.statistics[0].item_count)
+
+        self.run_and_expect_exception(prog)
+
+        self.assertEqual(1, prog.statistics[0].item_count)
+
+    def assert_exception_raised_attribute_is_untouched(self, attribute, initial_value):
+        prog = self.die_prog()
+        setattr(prog.statistics[0], attribute, initial_value)
+
+        self.run_and_expect_exception(prog)
+
+        self.assertEqual(initial_value, getattr(prog.statistics[0], attribute))
+
+    def test_assert_exception_raised_attribute_is_untouched(self):
+        try:
+            self.assert_exception_raised_attribute_is_untouched('item_count', 1)
+        except AssertionError:
+            # item_count supposed to be incremented, so the above should fail
+            pass
+        else:
+            self.fail('Expected a failure - item_count supposed to be incremented!')
+
+    def test_on_exception_success_count_is_not_touched(self):
+        self.assert_exception_raised_attribute_is_untouched('success_count', 2)
+
+    def test_on_exception_failure_count_is_not_touched(self):
+        self.assert_exception_raised_attribute_is_untouched('failure_count', 3)
+
+    def test_on_exception_run_time_is_not_touched(self):
+        self.assert_exception_raised_attribute_is_untouched('run_time', '')
+
+    def test_on_exception_statistics_had_exception(self):
+        prog = self.die_prog()
+        self.assertFalse(prog.statistics[0].had_exception)
+
+        self.run_and_expect_exception(prog)
+
+        self.assertTrue(prog.statistics[0].had_exception)
 
 
 class Test_decorators(unittest.TestCase):
