@@ -1,5 +1,9 @@
 import unittest
 import mock
+
+import logging
+from contextlib import contextmanager
+
 import tarr.application as m # odule
 import tarr.model
 from db import db_test
@@ -248,18 +252,91 @@ class Test_process_batch(unittest.TestCase):
         app.session.commit.assert_called_once_with()
 
 
+# FIXME: RecordCollectorHandler and temporary_log_handler() should be moved out into a log testing lib
+class RecordCollectorHandler(logging.Handler):
+
+    def __init__(self):
+        super(RecordCollectorHandler, self).__init__()
+        self.records = []
+
+    def emit(self, record):
+        self.records.append(record.getMessage())
+
+@contextmanager
+def temporary_log_handler(logger, handler):
+    logger.addHandler(handler)
+    yield
+    logger.removeHandler(handler)
+
+
 class Test_process_data_item(unittest.TestCase):
 
-    def test(self):
+    def make_app(self, process):
         app = make_app()
         self.assertIsNone(app.dag_runner)
         app.dag_runner = mock.Mock(m.Runner)
-        app.dag_runner.process = mock.Mock(m.Runner.process, side_effect=lambda data_item: mock.sentinel.processed)
+        app.dag_runner.process = mock.Mock(m.Runner.process, side_effect=process)
+        return app
+
+    def test_works_with_dag_runner(self):
+        app = self.make_app(process=lambda data_item: mock.sentinel.processed)
 
         output = app.process_data_item(mock.sentinel.input)
 
         app.dag_runner.process.assert_called_once_with(mock.sentinel.input)
         self.assertEqual(mock.sentinel.processed, output)
+
+    def raise_exception_process(self, data_item):
+        data_item['processed'] = True
+        raise Exception('This should be caught by Application.process_data_item!')
+
+    def test_exception_is_handled(self):
+        app = self.make_app(self.raise_exception_process)
+
+        data_item = {'something': 'svalue'}
+
+        self.assertEqual({'something': 'svalue', 'processed': True}, app.process_data_item(data_item))
+
+    def test_exception_logged(self):
+        app = self.make_app(self.raise_exception_process)
+
+        data_item = {'something': 'svalue'}
+
+        record_collector = RecordCollectorHandler()
+
+        with temporary_log_handler(m.log, record_collector):
+            app.process_data_item(data_item)
+
+        self.assertIn('''process_data_item({'something': 'svalue', 'processed': True})''', record_collector.records)
+
+    def process_with_logging_error(self, record_collector, data_item):
+        app = self.make_app(self.raise_exception_process)
+
+        class CruelHandler(logging.Handler):
+            def emit(self, record):
+                if record.args:
+                    raise Exception("Will not do it this time!")
+
+        with temporary_log_handler(m.log, CruelHandler()), temporary_log_handler(m.log, record_collector):
+            return app.process_data_item(data_item)
+
+    def test_internal_logging_errors_are_not_propagated(self):
+        data_item = {'something2': 'svalue2'}
+
+        # should not get any exception - from logging
+        output = self.process_with_logging_error(RecordCollectorHandler(), data_item)
+
+        # we still get back the modified data
+        self.assertEqual({'something2': 'svalue2', 'processed': True}, output)
+
+    def test_on_internal_logging_error_something_is_still_logged(self):
+        data_item = {'something2': 'svalue2'}
+
+        record_collector = RecordCollectorHandler()
+
+        self.process_with_logging_error(record_collector, data_item)
+
+        self.assertIn('process_data_item - can not log data_item!', record_collector.records)
 
 
 class DeleteJobFixture:

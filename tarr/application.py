@@ -6,6 +6,11 @@ from datetime import datetime
 
 from lib.file import ResourceLocator # FIXME: ResourceLocator is external to tarr & it is only a temporary solution
 
+import logging
+
+
+log = logging.getLogger(__name__)
+
 
 class Application(ResourceLocator):
     ''' Facade of operations of batch data processing using DAG of processors.
@@ -98,8 +103,14 @@ class Application(ResourceLocator):
         pass
 
     def process_data_item(self, data_item):
-        '''Processes a single data item'''
-        return self.dag_runner.process(data_item)
+        try:
+            return self.dag_runner.process(data_item)
+        except:
+            try:
+                log.exception('process_data_item(%s)', repr(data_item))
+            except:
+                log.exception('process_data_item - can not log data_item!')
+            return data_item
 
     def save_data_items(self, data_items):
         '''Extract output from data items and store them.
