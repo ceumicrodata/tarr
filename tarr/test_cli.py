@@ -108,7 +108,7 @@ class Test_main_integration(SqlTestCase):
             TestConnection().as_args_list()
             + (
                 'create_job jobname --app=tarr.application.Application'
-                ' --program=fixtures/test_dag_config'
+                ' --program=tarr.fixtures.program'
                 ' --source=complex:rovat_13:pm').split())
 
         m.main(args=args_list)

@@ -38,7 +38,7 @@ class StatisticsCollectorRunner(compiler_base.Runner):
     def ensure_statistics(self, index):
         while index >= len(self.statistics):
             stat = model.NodeStatistic()
-            stat.init(index)
+            stat.init(len(self.statistics))
             self.statistics.append(stat)
 
 
@@ -267,6 +267,7 @@ class DotFormatterWithStatistics(DotFormatter):
 
 class Program(compiler_base.Program):
 
+    # FIXME: Program.__init__ should initialize statistic as well by calling runner.ensure_statistics
     def make_runner(self):
         return StatisticsCollectorRunner()
 

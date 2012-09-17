@@ -1,5 +1,6 @@
 import unittest
 import mock
+import os
 
 import logging
 from contextlib import contextmanager
@@ -111,10 +112,10 @@ class Test_program_config_file(unittest.TestCase):
 
     def test(self):
         app = make_app()
-        program_config = 'asd/x'
+        program_config = 'tarr.fixtures.program'
         app.create_job(name='', program_config=program_config, source='', partitioning_name='', description='')
 
-        self.assertRegexpMatches(app.program_config_file(), '/asd/x')
+        self.assertRegexpMatches(app.program_config_file(), os.path.join('tarr', 'fixtures', 'program.py$'))
 
 
 class Test_program_config_hash(unittest.TestCase):
@@ -122,21 +123,21 @@ class Test_program_config_hash(unittest.TestCase):
     def test(self):
         app = m.Application()
         app.job = mock.Mock()
-        app.job.program_config = 'fixtures/test_dag_config_for_hash'
+        app.job.program_config = 'tarr.fixtures.program_for_hash'
 
-        self.assertEqual('e01b0562e55d417eb14b6646d14fc9e5a879ab02', app.program_config_hash())
+        self.assertEqual('9161b0f4303953d1d208d309388c28d0aa11228c', app.program_config_hash())
 
 
 class Test_load_program(unittest.TestCase):
 
-    def test_dag_is_available(self):
+    def test_program_is_available(self):
         app = make_app()
         app.job = mock.Mock()
-        app.job.program_config = 'fixtures/test_dag_config'
+        app.job.program_config = 'tarr.fixtures.program'
 
         app.load_program()
 
-        self.assertIsNotNone(app.program.node_by_name('id'))
+        self.assertIsNotNone(app.program)
 
 
 class Test_process_job(unittest.TestCase):
@@ -273,17 +274,17 @@ class Test_process_data_item(unittest.TestCase):
 
     def make_app(self, process):
         app = make_app()
-        self.assertIsNone(app.dag_runner)
-        app.dag_runner = mock.Mock(m.Runner)
-        app.dag_runner.process = mock.Mock(m.Runner.process, side_effect=process)
+        self.assertIsNone(app.program)
+        app.program = mock.Mock(m.Program)
+        app.program.run = mock.Mock(m.Program.run, side_effect=process)
         return app
 
-    def test_works_with_dag_runner(self):
+    def test_works_with_program(self):
         app = self.make_app(process=lambda data_item: mock.sentinel.processed)
 
         output = app.process_data_item(mock.sentinel.input)
 
-        app.dag_runner.process.assert_called_once_with(mock.sentinel.input)
+        app.program.run.assert_called_once_with(mock.sentinel.input)
         self.assertEqual(mock.sentinel.processed, output)
 
     def raise_exception_process(self, data_item):
@@ -437,27 +438,28 @@ class Test_statistics(db_test.SqlTestCase):
         app = m.Application()
         app.session = self.session
 
-        app.create_job('name', 'fixtures/test_dag_config', 'source', 'partitioning_name', 'description')
+        app.create_job('name', 'tarr.fixtures.program', 'source', 'partitioning_name', 'description')
         app.load_program()
         app.job.create_batch(source='1')
         app.batch = app.job.batches[0]
 
         # set statistics on nodes
-        self.node1, self.node2 = self.nodes(app)
+        app.program.runner.ensure_statistics(2)
+        stat1, stat2 = self.stats(app)
 
-        self.node1.item_count = 10
-        self.node1.success_count = 1
-        self.node1.failure_count = 9
-        self.node1.run_time = timedelta(1, 1, 1)
+        stat1.item_count = 10
+        stat1.success_count = 1
+        stat1.failure_count = 9
+        stat1.run_time = timedelta(1, 1, 1)
 
-        self.node2.item_count = 20
-        self.node2.success_count = 9
-        self.node2.failure_count = 11
-        self.node2.run_time = timedelta(2, 2, 2)
+        stat2.item_count = 20
+        stat2.success_count = 9
+        stat2.failure_count = 11
+        stat2.run_time = timedelta(2, 2, 2)
         return app
 
-    def nodes(self, app):
-        return app.program.node_by_name('id'), app.program.node_by_name('another_id')
+    def stats(self, app):
+        return app.program.statistics[:2]
 
     def reload_app(self):
         # forget in-memory statistics objects
@@ -482,12 +484,12 @@ class Test_statistics(db_test.SqlTestCase):
         app.merge_batch_statistics()
 
         # check statistics on nodes
-        node1, node2 = self.nodes(app)
+        stat1, stat2 = self.stats(app)
         self.assertEqual(
             ((10, 1, 9, timedelta(1, 1, 1)),
                 (20, 9, 11, timedelta(2, 2, 2))),
-            ((node1.item_count, node1.success_count, node1.failure_count, node1.run_time),
-                (node2.item_count, node2.success_count, node2.failure_count, node2.run_time)))
+            ((stat1.item_count, stat1.success_count, stat1.failure_count, stat1.run_time),
+                (stat2.item_count, stat2.success_count, stat2.failure_count, stat2.run_time)))
 
     def test_merge_batch_statistics_is_additive(self):
         app = self.make_app()
@@ -502,9 +504,9 @@ class Test_statistics(db_test.SqlTestCase):
         app.merge_batch_statistics()
 
         # check statistics on nodes
-        node1, node2 = self.nodes(app)
+        stat1, stat2 = self.stats(app)
         self.assertEqual(
             ((20, 2, 18, timedelta(2, 2, 2)),
                 (40, 18, 22, timedelta(4, 4, 4))),
-            ((node1.item_count, node1.success_count, node1.failure_count, node1.run_time),
-                (node2.item_count, node2.success_count, node2.failure_count, node2.run_time)))
+            ((stat1.item_count, stat1.success_count, stat1.failure_count, stat1.run_time),
+                (stat2.item_count, stat2.success_count, stat2.failure_count, stat2.run_time)))

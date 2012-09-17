@@ -74,15 +74,15 @@ class Batch(Base):
     def is_processed(self):
         return self.time_completed is not None
 
-    def save_statistics(self, dag):
+    def save_statistics(self, program):
         self.runstat = RunStatistic()
-        for node in dag.nodes:
+        for node in program.statistics:
             self.runstat.nodes.append(NodeStatistic.clone(node))
 
-    def merge_statistics_into(self, dag):
+    def merge_statistics_into(self, program):
+        program.runner.ensure_statistics(len(self.runstat.nodes))
         for nodestat in self.runstat.nodes:
-            node = dag.node_by_name(nodestat.node_name)
-            NodeStatistic.merge(node, nodestat)
+            program.statistics[nodestat.index].merge(nodestat)
 
 
 # Job.source and Batch.source together specify the input data
@@ -126,21 +126,24 @@ class NodeStatistic(Base):
         self.run_time = timedelta()
 
     @property
+    def index(self):
+        return int(self.node_name)
+
+    @property
     def had_exception(self):
         return self.item_count > self.success_count + self.failure_count
 
-    @staticmethod
-    def merge(into, from_stat):
-        into.name = from_stat.node_name
-        into.item_count += from_stat.item_count
-        into.success_count += from_stat.success_count
-        into.failure_count += from_stat.failure_count
-        into.run_time += from_stat.run_time
+    def merge(self, from_stat):
+        self.node_name = from_stat.node_name
+        self.item_count += from_stat.item_count
+        self.success_count += from_stat.success_count
+        self.failure_count += from_stat.failure_count
+        self.run_time += from_stat.run_time
 
     @classmethod
     def clone(cls, node):
         new_node = cls()
-        new_node.node_name = node.name
+        new_node.node_name = node.node_name
         new_node.item_count = node.item_count
         new_node.success_count = node.success_count
         new_node.failure_count = node.failure_count

@@ -1,10 +1,10 @@
+import os.path
 from tarr.model import Job
-from tarr.runner import Runner
+from tarr.compiler import Program
+from zope.dottedname.resolve import resolve as dottedname_resolve
 
 import hashlib
 from datetime import datetime
-
-from lib.file import ResourceLocator # FIXME: ResourceLocator is external to tarr & it is only a temporary solution
 
 import logging
 
@@ -12,7 +12,8 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class Application(ResourceLocator):
+class Application(object):
+
     ''' Facade of operations of batch data processing using DAG of processors.
 
     This class is intended to be subclassed for defining the concrete operations.
@@ -24,7 +25,7 @@ class Application(ResourceLocator):
 
     session = None
 
-    dag_runner = None
+    program = None
     job = None
     batch = None
 
@@ -55,7 +56,10 @@ class Application(ResourceLocator):
     def program_config_file(self):
         ''' .job.program_config -> file name '''
 
-        return self.relative_path(self.job.program_config)
+        compiled_file = dottedname_resolve(self.job.program_config).__file__
+        base, ext = os.path.splitext(compiled_file)
+        assert ext in ['.py', '.pyc', '.pyo']
+        return base + '.py'
 
     def program_config_content(self):
         with open(self.program_config_file()) as f:
@@ -104,7 +108,7 @@ class Application(ResourceLocator):
 
     def process_data_item(self, data_item):
         try:
-            return self.dag_runner.process(data_item)
+            return self.program.run(data_item)
         except:
             try:
                 log.exception('process_data_item(%s)', repr(data_item))
@@ -138,13 +142,7 @@ class Application(ResourceLocator):
         self.session.delete(self.batch)
         self.batch = None
 
-    @property
-    def program(self):
-        '''Data processing logic in the format of Directed Acyclic Graph of Processors'''
-
-        return self.dag_runner.dag
-
     def load_program(self):
         '''Loads the job's DAG - the data processing logic'''
 
-        self.dag_runner = Runner(self.program_config_content())
+        self.program = Program(dottedname_resolve(self.job.program_config).TARR_PROGRAM)

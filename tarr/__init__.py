@@ -1,3 +1,3 @@
-from tarr.processor import branch, rule
+from tarr.compiler import branch, rule
 
 __all__ = ['branch', 'rule']

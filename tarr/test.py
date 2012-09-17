@@ -1,7 +1,7 @@
 import unittest
-from tarr.runner import Runner
 from tarr.data import Data
 import tarr
+from tarr.compiler import IF, ELSE, ENDIF, RETURN, Program
 
 
 @tarr.branch
@@ -18,24 +18,23 @@ def other(data):
     return 'something else'
 
 
-TEST_CONFIG = '''
-is_animal: tarr.test.is_animal
-    F -> other
-
-animal: tarr.test.animal
-    SF -> STOP
-
-other: tarr.test.other
-'''
+PROGRAM = [
+    IF (is_animal),
+        animal,
+    ELSE,
+        other,
+    ENDIF,
+    RETURN
+]
 
 
 class TestDecorators(unittest.TestCase):
 
     def test_decorators(self):
-        runner = Runner(TEST_CONFIG)
+        program = Program(PROGRAM)
 
-        self.assertEqual('ANIMAL', runner.process(Data(1, 'fish')).payload)
-        self.assertEqual('ANIMAL', runner.process(Data(1, 'cat')).payload)
-        self.assertEqual('ANIMAL', runner.process(Data(1, 'dog')).payload)
-        self.assertEqual('something else', runner.process(Data(1, 'flower')).payload)
-        self.assertEqual('something else', runner.process(Data(1, 'rock')).payload)
+        self.assertEqual('ANIMAL', program.run(Data(1, 'fish')).payload)
+        self.assertEqual('ANIMAL', program.run(Data(1, 'cat')).payload)
+        self.assertEqual('ANIMAL', program.run(Data(1, 'dog')).payload)
+        self.assertEqual('something else', program.run(Data(1, 'flower')).payload)
+        self.assertEqual('something else', program.run(Data(1, 'rock')).payload)
