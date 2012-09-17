@@ -1,8 +1,9 @@
 import sys
-from tarr.runner import DagConfigReader
+from tarr.compiler import Program
 
-config, = sys.argv[1:]
+name, = sys.argv[1:]
 
-dag = DagConfigReader().from_string(open(config).read())
-dag.initialize()
-print dag.to_dot()
+module = __import__(name, fromlist=[True])
+
+program = Program(module.TARR_PROGRAM)
+print program.to_dot()
