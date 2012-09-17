@@ -13,12 +13,12 @@ from datetime import datetime, timedelta
 def make_app(cls=m.Application):
     app = cls()
     app.session = mock.Mock()
-    app.dag_config_hash = mock.Mock(app.dag_config_hash, return_value=mock.sentinel.dag_config_hash)
+    app.program_config_hash = mock.Mock(app.program_config_hash, return_value=mock.sentinel.program_config_hash)
     return app
 
 
-def create_job(app, name='test', dag_config='', source='', partitioning_name='', description=''):
-    app.create_job(name=name, dag_config=dag_config, source=source, partitioning_name=partitioning_name, description=description)
+def create_job(app, name='test', program_config='', source='', partitioning_name='', description=''):
+    app.create_job(name=name, program_config=program_config, source=source, partitioning_name=partitioning_name, description=description)
     app.session.commit.reset_mock()
 
 
@@ -27,10 +27,10 @@ def uncompleted_batch(source):
     batch.source = source
     return batch
 
-def completed_batch(source, time_completed=mock.sentinel.time_completed, dag_config_hash=mock.sentinel.dag_config_hash):
+def completed_batch(source, time_completed=mock.sentinel.time_completed, program_config_hash=mock.sentinel.program_config_hash):
     batch = uncompleted_batch(source=source)
     batch.time_completed = time_completed
-    batch.dag_config_hash = dag_config_hash
+    batch.program_config_hash = program_config_hash
     return batch
 
 
@@ -41,8 +41,8 @@ class Bpplication(m.Application):
 
 class Test_create_job(unittest.TestCase):
 
-    def create_job(self, app, name='', dag_config='', source='', partitioning_name='', description=''):
-        app.create_job(name=name, dag_config=dag_config, source=source, partitioning_name=partitioning_name, description=description)
+    def create_job(self, app, name='', program_config='', source='', partitioning_name='', description=''):
+        app.create_job(name=name, program_config=program_config, source=source, partitioning_name=partitioning_name, description=description)
 
     def test_created(self):
         app = make_app()
@@ -91,40 +91,40 @@ class Test_create_job(unittest.TestCase):
         app = make_app()
 
         ms = mock.sentinel
-        app.create_job(name=ms.name, dag_config=ms.dag_config, source=ms.source, partitioning_name=ms.partitioning_name, description=ms.description)
+        app.create_job(name=ms.name, program_config=ms.program_config, source=ms.source, partitioning_name=ms.partitioning_name, description=ms.description)
 
         self.assertEqual(ms.name, app.job.job_name)
-        self.assertEqual(ms.dag_config, app.job.dag_config)
+        self.assertEqual(ms.program_config, app.job.program_config)
         self.assertEqual(ms.source, app.job.source)
         self.assertEqual(ms.partitioning_name, app.job.partitioning_name)
         self.assertEqual(ms.description, app.job.description)
 
-    def test_dag_config_hash_called_for_hash(self):
+    def test_program_config_hash_is_called_for_hash(self):
         app = make_app()
 
-        self.create_job(app, dag_config='tarr.test_dag_config_for_hash')
+        self.create_job(app, program_config='tarr.test_dag_config_for_hash')
 
-        self.assertEqual(mock.sentinel.dag_config_hash, app.job.dag_config_hash)
+        self.assertEqual(mock.sentinel.program_config_hash, app.job.program_config_hash)
 
 
-class Test_dag_config_file(unittest.TestCase):
+class Test_program_config_file(unittest.TestCase):
 
     def test(self):
         app = make_app()
-        dag_config = 'asd/x'
-        app.create_job(name='', dag_config=dag_config, source='', partitioning_name='', description='')
+        program_config = 'asd/x'
+        app.create_job(name='', program_config=program_config, source='', partitioning_name='', description='')
 
-        self.assertRegexpMatches(app.dag_config_file(), '/asd/x')
+        self.assertRegexpMatches(app.program_config_file(), '/asd/x')
 
 
-class Test_dag_config_hash(unittest.TestCase):
+class Test_program_config_hash(unittest.TestCase):
 
     def test(self):
         app = m.Application()
         app.job = mock.Mock()
-        app.job.dag_config = 'fixtures/test_dag_config_for_hash'
+        app.job.program_config = 'fixtures/test_dag_config_for_hash'
 
-        self.assertEqual('e01b0562e55d417eb14b6646d14fc9e5a879ab02', app.dag_config_hash())
+        self.assertEqual('e01b0562e55d417eb14b6646d14fc9e5a879ab02', app.program_config_hash())
 
 
 class Test_load_program(unittest.TestCase):
@@ -132,7 +132,7 @@ class Test_load_program(unittest.TestCase):
     def test_dag_is_available(self):
         app = make_app()
         app.job = mock.Mock()
-        app.job.dag_config = 'fixtures/test_dag_config'
+        app.job.program_config = 'fixtures/test_dag_config'
 
         app.load_program()
 
@@ -232,7 +232,7 @@ class Test_process_batch(unittest.TestCase):
         app = self.mock_app()
         app.process_batch()
 
-        self.assertEqual(mock.sentinel.dag_config_hash, app.batch.dag_config_hash)
+        self.assertEqual(mock.sentinel.program_config_hash, app.batch.program_config_hash)
 
     def test_time_completed_set(self):
         app = self.mock_app()

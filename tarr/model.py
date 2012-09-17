@@ -23,8 +23,8 @@ class Job(Base):
     job_name = Column(sa.String, primary_key=True, nullable=False)
     time_created = Column(sa.DateTime, server_default=sa.text('current_timestamp'))
     application = Column(sa.String, nullable=False)
-    dag_config = Column(sa.String)
-    dag_config_hash = Column(sa.String)
+    program_config = Column(sa.String)
+    program_config_hash = Column(sa.String)
     partitioning_name = Column(sa.String)
     source = Column(sa.String) # 'complex:rovat_13:pc' for data in complex db table rovat_13 selecting fields starting with 'pc': pcirsz, pchely, pcteru, ...
     # params = Column(sa.Text) # (json?)
@@ -47,8 +47,8 @@ class Job(Base):
 
 
 # application: a dotted name resolving to a tarr.application.Application that can process this job
-# dag_config: it is not the full dag_config, rather an identifier (dotted path)
-# the full dag_config might be stored in another table (it might change over time!)
+# program_config: it is not the full program_config, rather an identifier (dotted path)
+# the full program_config might be stored in another table (it might change over time!)
 #
 # source/params:
 # to define data source? ('rovat_5', 'rovat_6', 'rovat_7')
@@ -66,7 +66,7 @@ class Batch(Base):
     source = Column(sa.String) # complex partition_id as string
 
     time_completed = Column(sa.DateTime)
-    dag_config_hash = Column(sa.String)
+    program_config_hash = Column(sa.String)
     runstat_id = Column(sa.Integer, sa.ForeignKey('runstat.runstat_id'))
     runstat = sa.orm.relationship('RunStatistic')
 
@@ -87,7 +87,7 @@ class Batch(Base):
 
 # Job.source and Batch.source together specify the input data
 #
-# dag_config_hash: over time the dag_config file (and the program) can change
+# program_config_hash: over time the program_config file (and the program) can change
 # that change might be harmful, so it is worth knowing if it happened
 
 

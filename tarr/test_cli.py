@@ -15,7 +15,7 @@ class Test_parse_args(unittest.TestCase):
     def test_create_job(self):
         args = m.parse_args(
             (
-                'create_job jobname --app=location.clean.Application --dag=dag-config --source=complex:rovat_13:pm'
+                'create_job jobname --app=location.clean.Application --program=program-config --source=complex:rovat_13:pm'
                 ' --partitioning_name=every_200'
             ).split()
             + ['--description=a description'])
@@ -23,7 +23,7 @@ class Test_parse_args(unittest.TestCase):
         self.assertEqual('create_job', args.command)
         self.assertEqual('jobname', args.name)
         self.assertEqual('location.clean.Application', args.application)
-        self.assertEqual('dag-config', args.dag_config)
+        self.assertEqual('program-config', args.program)
         self.assertEqual('complex:rovat_13:pm', args.source)
         self.assertEqual('every_200', args.partitioning_name)
         self.assertEqual('a description', args.description)
@@ -108,7 +108,7 @@ class Test_main_integration(SqlTestCase):
             TestConnection().as_args_list()
             + (
                 'create_job jobname --app=tarr.application.Application'
-                ' --dag=fixtures/test_dag_config'
+                ' --program=fixtures/test_dag_config'
                 ' --source=complex:rovat_13:pm').split())
 
         m.main(args=args_list)
@@ -162,7 +162,7 @@ class Test_CreateJobCommand(unittest.TestCase):
 
         command.application.create_job.assert_called_once_with(
             name=mock.sentinel.name,
-            dag_config=mock.sentinel.dag_config,
+            program_config=mock.sentinel.program,
             source=mock.sentinel.source,
             partitioning_name=mock.sentinel.partitioning_name,
             description=mock.sentinel.description)

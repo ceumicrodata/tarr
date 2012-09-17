@@ -32,7 +32,7 @@ class Application(ResourceLocator):
         '''Create application specific schema here'''
         pass
 
-    def create_job(self, name, dag_config, source, partitioning_name, description):
+    def create_job(self, name, program_config, source, partitioning_name, description):
         self.job = Job()
 
         self.job.job_name = name
@@ -40,8 +40,8 @@ class Application(ResourceLocator):
         cls = self.__class__
         self.job.application = '{0}.{1}'.format(cls.__module__, cls.__name__)
 
-        self.job.dag_config = dag_config
-        self.job.dag_config_hash = self.dag_config_hash()
+        self.job.program_config = program_config
+        self.job.program_config_hash = self.program_config_hash()
         self.job.source = source
         self.job.partitioning_name = partitioning_name
         self.job.description = description
@@ -52,18 +52,18 @@ class Application(ResourceLocator):
 
         self.session.commit()
 
-    def dag_config_file(self):
-        ''' .job.dag_config -> file name '''
+    def program_config_file(self):
+        ''' .job.program_config -> file name '''
 
-        return self.relative_path(self.job.dag_config)
+        return self.relative_path(self.job.program_config)
 
-    def dag_config_content(self):
-        with open(self.dag_config_file()) as f:
+    def program_config_content(self):
+        with open(self.program_config_file()) as f:
             return f.read()
 
-    def dag_config_hash(self):
+    def program_config_hash(self):
         hash = hashlib.sha1()
-        hash.update(self.dag_config_content())
+        hash.update(self.program_config_content())
         return hash.hexdigest()
 
     def create_batches(self):
@@ -85,7 +85,7 @@ class Application(ResourceLocator):
         self.save_data_items(processed_data_items)
 
         self.batch.time_completed = datetime.now()
-        self.batch.dag_config_hash = self.dag_config_hash()
+        self.batch.program_config_hash = self.program_config_hash()
 
         self.save_batch_statistics()
 
@@ -147,4 +147,4 @@ class Application(ResourceLocator):
     def load_program(self):
         '''Loads the job's DAG - the data processing logic'''
 
-        self.dag_runner = Runner(self.dag_config_content())
+        self.dag_runner = Runner(self.program_config_content())

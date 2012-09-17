@@ -22,7 +22,7 @@ def parse_args(args=None):
     p = subparser('create_job', description='Create a new job')
     p.add_argument('name', help='job name')
     p.add_argument('--application', help='Application class reference - knows how to load and save data')
-    p.add_argument('--dag_config', help='config file describing the processing nodes')
+    p.add_argument('--program', help='python module having a TARR_PROGRAM')
     p.add_argument('--source', help='data to work on - application specific!')
     p.add_argument('--partitioning_name', default=None, help='partitioning used by batch creation (%(default)s)')
     p.add_argument('--description', default=None, help='words differentiating this job from others on the same data')
@@ -85,7 +85,7 @@ class CreateJobCommand(Command):
 
         self.application.create_job(
             name=args.name,
-            dag_config=args.dag_config,
+            program_config=args.program,
             source=args.source,
             partitioning_name=args.partitioning_name,
             description=args.description)
