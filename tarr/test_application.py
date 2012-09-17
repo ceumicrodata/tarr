@@ -103,7 +103,7 @@ class Test_create_job(unittest.TestCase):
     def test_program_config_hash_is_called_for_hash(self):
         app = make_app()
 
-        self.create_job(app, program_config='tarr.test_dag_config_for_hash')
+        self.create_job(app, program_config='tarr.nonexisting_program_config_for_hash')
 
         self.assertEqual(mock.sentinel.program_config_hash, app.job.program_config_hash)
 
