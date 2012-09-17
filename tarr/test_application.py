@@ -136,7 +136,7 @@ class Test_load_program(unittest.TestCase):
 
         app.load_program()
 
-        self.assertIsNotNone(app.dag.node_by_name('id'))
+        self.assertIsNotNone(app.program.node_by_name('id'))
 
 
 class Test_process_job(unittest.TestCase):
@@ -457,7 +457,7 @@ class Test_statistics(db_test.SqlTestCase):
         return app
 
     def nodes(self, app):
-        return app.dag.node_by_name('id'), app.dag.node_by_name('another_id')
+        return app.program.node_by_name('id'), app.program.node_by_name('another_id')
 
     def reload_app(self):
         # forget in-memory statistics objects

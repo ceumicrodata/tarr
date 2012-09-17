@@ -121,10 +121,10 @@ class Application(ResourceLocator):
         pass
 
     def save_batch_statistics(self):
-        self.batch.save_statistics(self.dag)
+        self.batch.save_statistics(self.program)
 
     def merge_batch_statistics(self):
-        self.batch.merge_statistics_into(self.dag)
+        self.batch.merge_statistics_into(self.program)
 
     def delete_job(self):
         for self.batch in self.job.batches:
@@ -139,7 +139,7 @@ class Application(ResourceLocator):
         self.batch = None
 
     @property
-    def dag(self):
+    def program(self):
         '''Data processing logic in the format of Directed Acyclic Graph of Processors'''
 
         return self.dag_runner.dag
