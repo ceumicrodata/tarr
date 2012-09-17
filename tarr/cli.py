@@ -104,7 +104,7 @@ class ProcessJobCommand(Command):
     def run(self, args):
         self.get_application_from_jobname(args.name)
 
-        self.application.load_dag()
+        self.application.load_program()
         self.application.process_job()
 
 
@@ -113,7 +113,7 @@ class ProcessBatchCommand(Command):
     def process_batch(self, batch_id):
         self.get_application_from_batchid(batch_id)
 
-        self.application.load_dag()
+        self.application.load_program()
         self.application.process_batch()
 
     def run(self, args):

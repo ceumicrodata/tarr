@@ -144,7 +144,7 @@ class Application(ResourceLocator):
 
         return self.dag_runner.dag
 
-    def load_dag(self):
+    def load_program(self):
         '''Loads the job's DAG - the data processing logic'''
 
         self.dag_runner = Runner(self.dag_config_content())

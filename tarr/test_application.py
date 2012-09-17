@@ -127,14 +127,14 @@ class Test_dag_config_hash(unittest.TestCase):
         self.assertEqual('e01b0562e55d417eb14b6646d14fc9e5a879ab02', app.dag_config_hash())
 
 
-class Test_load_dag(unittest.TestCase):
+class Test_load_program(unittest.TestCase):
 
     def test_dag_is_available(self):
         app = make_app()
         app.job = mock.Mock()
         app.job.dag_config = 'fixtures/test_dag_config'
 
-        app.load_dag()
+        app.load_program()
 
         self.assertIsNotNone(app.dag.node_by_name('id'))
 
@@ -438,7 +438,7 @@ class Test_statistics(db_test.SqlTestCase):
         app.session = self.session
 
         app.create_job('name', 'fixtures/test_dag_config', 'source', 'partitioning_name', 'description')
-        app.load_dag()
+        app.load_program()
         app.job.create_batch(source='1')
         app.batch = app.job.batches[0]
 
@@ -467,7 +467,7 @@ class Test_statistics(db_test.SqlTestCase):
         app = m.Application()
         app.session = self.session
         app.job = self.session.query(tarr.model.Job).one()
-        app.load_dag()
+        app.load_program()
         app.batch = app.job.batches[0]
         return app
 

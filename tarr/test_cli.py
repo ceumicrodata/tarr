@@ -208,12 +208,12 @@ class Test_ProcessJobCommand(unittest.TestCase):
 
         command.get_application_from_jobname.assert_called_once_with(mock.sentinel.name)
 
-    def test_load_dag(self):
+    def test_load_program(self):
         command = self.get_command()
 
         command.run(args_mock())
 
-        command.application.load_dag.assert_called_once_with()
+        command.application.load_program.assert_called_once_with()
 
     def test_process_job(self):
         command = self.get_command()
@@ -247,12 +247,12 @@ class Test_ProcessBatchCommand(unittest.TestCase):
 
         command.get_application_from_batchid.assert_called_once_with(mock.sentinel.batch_id)
 
-    def test_load_dag(self):
+    def test_load_program(self):
         command = self.get_command()
 
         command.process_batch(mock.sentinel.batch_id)
 
-        command.application.load_dag.assert_called_once_with()
+        command.application.load_program.assert_called_once_with()
 
     def test_app_process_batch(self):
         command = self.get_command()
