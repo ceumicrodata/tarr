@@ -44,9 +44,8 @@ class StatisticsCollectorRunner(compiler_base.Runner):
 
 class ToTextVisitor(compiler_base.ProgramVisitor):
 
-    def __init__(self, formatter):
+    def __init__(self):
         self.lines = []
-        self.formatter = formatter
 
     def text(self):
         return '\n'.join(self.lines)
@@ -61,10 +60,14 @@ class ToTextVisitor(compiler_base.ProgramVisitor):
         self.addline('{0:4d} {1}'.format(instruction.index, line))
 
     def format_branch(self, instruction, name):
-        self.formatter.format_branch(self, instruction, name)
+        self.addcode(instruction, name)
+        on_success = instruction.next_instruction(exit_status=True).index
+        on_failure = instruction.next_instruction(exit_status=False).index
+        self.addcomment('  # True  -> {0}'.format(on_success))
+        self.addcomment('  # False -> {0}'.format(on_failure))
 
     def format_instruction(self, instruction, name):
-        self.formatter.format_instruction(self, instruction, name)
+        self.addcode(instruction, name)
 
     def enter_subprogram(self, label, instructions):
         if label is not None:
@@ -93,42 +96,29 @@ class ToTextVisitor(compiler_base.ProgramVisitor):
         self.format_branch(i_branch, i_branch.instruction_name)
 
 
-class TextFormatter(object):
-
-    def format_branch(self, collector, instruction, name):
-        collector.addcode(instruction, name)
-        on_success = instruction.next_instruction(exit_status=True).index
-        on_failure = instruction.next_instruction(exit_status=False).index
-        collector.addcomment('  # True  -> {0}'.format(on_success))
-        collector.addcomment('  # False -> {0}'.format(on_failure))
-
-    def format_instruction(self, collector, instruction, name):
-        collector.addcode(instruction, name)
-
-
-class TextFormatterWithStatistics(TextFormatter):
+class ToTextVisitorWithStatistics(ToTextVisitor):
 
     def __init__(self, statistics):
+        super(ToTextVisitorWithStatistics, self).__init__()
         self.statistics = statistics
 
-    def format_branch(self, collector, instruction, name):
+    def format_branch(self, instruction, name):
         statistics = self.statistics[instruction.index]
-        collector.addcode(instruction, name)
+        self.addcode(instruction, name)
         on_success = instruction.next_instruction(exit_status=True).index
         on_failure = instruction.next_instruction(exit_status=False).index
-        collector.addcomment('  # True  -> {0}   (*{1.success_count})'.format(on_success, statistics))
-        collector.addcomment('  # False -> {0}   (*{1.failure_count})'.format(on_failure, statistics))
+        self.addcomment('  # True  -> {0}   (*{1.success_count})'.format(on_success, statistics))
+        self.addcomment('  # False -> {0}   (*{1.failure_count})'.format(on_failure, statistics))
 
-    def format_instruction(self, collector, instruction, name):
+    def format_instruction(self, instruction, name):
         statistics = self.statistics[instruction.index]
-        collector.addcode(instruction, '{0}   (*{1.item_count})'.format(name, statistics))
+        self.addcode(instruction, '{0}   (*{1.item_count})'.format(name, statistics))
 
 
 class ToDotVisitor(compiler_base.ProgramVisitor):
 
-    def __init__(self, formatter):
+    def __init__(self):
         self.lines = ['digraph {', '', 'compound = true;']
-        self.formatter = formatter
         self.inter_cluster_edges = []
 
     def text(self):
@@ -145,42 +135,24 @@ class ToDotVisitor(compiler_base.ProgramVisitor):
     def addline(self, line, is_comment=False):
         self.lines.append(line)
 
-    def format_branch(self, instruction, name):
-        self.formatter.format_branch(self, instruction, name)
-
-    def format_instruction(self, instruction, name):
-        self.formatter.format_instruction(self, instruction, name)
-
-    def cluster_name(self, label):
-        return self.formatter.cluster_name(label)
-
-    def node_name(self, instruction):
-        return self.formatter.node_name(instruction)
-
-    def add_node(self, instruction, name):
-        self.formatter.add_node(self, instruction, name)
-
-    def add_return_node(self, instruction, name):
-        self.formatter.add_return_node(self, instruction, name)
-
-    def add_edge(self, instruction1, instruction2, label):
-        self.formatter.add_edge(self, instruction1, instruction2, label)
-
     def add_inter_cluster_edge(self, instruction1, instruction2, label):
-        self.inter_cluster_edges.append(self.formatter.format_edge(instruction1, instruction2, label))
+        self.inter_cluster_edges.append(self.format_edge(instruction1, instruction2, label))
 
     def enter_subprogram(self, label, instructions):
         self.addline('')
         self.addline('subgraph {} {{'.format(self.cluster_name(label)))
         if label is not None:
-            self.addline('    label = "{}";'.format(self.formatter.escape(label)))
+            self.addline('    label = "{}";'.format(self.escape(label)))
             self.addline('')
 
     def leave_subprogram(self, label):
         self.addline('}')
 
+    def call_label(self, i_call):
+        return ''
+
     def visit_call(self, i_call):
-        self.add_inter_cluster_edge(i_call, i_call.start_instruction, '')
+        self.add_inter_cluster_edge(i_call, i_call.start_instruction, self.call_label(i_call))
         self.format_branch(i_call, 'CALL {0}'.format(i_call.label))
 
     def visit_return(self, i_return):
@@ -196,9 +168,6 @@ class ToDotVisitor(compiler_base.ProgramVisitor):
     def visit_branch(self, i_branch):
         self.format_branch(i_branch, i_branch.instruction_name)
 
-
-class DotFormatter(object):
-
     def cluster_name(self, label):
         return '"cluster_{}"'.format(self.escape(label))
 
@@ -208,12 +177,12 @@ class DotFormatter(object):
     def escape(self, label):
         return str(label).replace('"', r'\"')
 
-    def add_node(self, collector, instruction, name):
+    def add_node(self, instruction, name):
         node = self.node_name(instruction)
-        collector.addline('    {} [label="{}"];'.format(node, self.escape(name)))
+        self.addline('    {} [label="{}"];'.format(node, self.escape(name)))
 
-    def add_return_node(self, collector, instruction, name):
-        self.add_node(collector, instruction, name)
+    def add_return_node(self, instruction, name):
+        self.add_node(instruction, name)
 
     def format_edge(self, instruction1, instruction2, label):
         node1 = self.node_name(instruction1)
@@ -231,38 +200,39 @@ class DotFormatter(object):
 
         return '    {} -> {}{};'.format(node1, node2, formatted_attrs)
 
-    def add_edge(self, collector, instruction1, instruction2, label):
-        collector.addline(self.format_edge(instruction1, instruction2, label))
+    def add_edge(self, instruction1, instruction2, label):
+        self.addline(self.format_edge(instruction1, instruction2, label))
 
-    def format_branch(self, collector, instruction, name):
-        collector.add_node(instruction, name)
+    def format_branch(self, instruction, name):
+        self.add_node(instruction, name)
         on_success = instruction.next_instruction(exit_status=True)
         on_failure = instruction.next_instruction(exit_status=False)
-        collector.add_edge(instruction, on_success, label='True')
-        collector.add_edge(instruction, on_failure, label='False')
+        self.add_edge(instruction, on_success, label='True')
+        self.add_edge(instruction, on_failure, label='False')
 
-    def format_instruction(self, collector, instruction, name):
-        collector.add_node(instruction, name)
+    def format_instruction(self, instruction, name):
+        self.add_node(instruction, name)
         next_instruction = instruction.next_instruction(exit_status=True)
-        collector.add_edge(instruction, next_instruction, label='')
+        self.add_edge(instruction, next_instruction, label='')
 
 
-class DotFormatterWithStatistics(DotFormatter):
+class ToDotVisitorWithStatistics(ToDotVisitor):
 
     def __init__(self, statistics):
+        super(ToDotVisitorWithStatistics, self).__init__()
         self.statistics = statistics
 
-    def add_return_node(self, collector, instruction, name):
+    def add_return_node(self, instruction, name):
         statistics = self.statistics[instruction.index]
-        self.add_node(collector, instruction, '{0}: {1.item_count}'.format(name, statistics))
+        self.add_node(instruction, '{0}: {1.item_count}'.format(name, statistics))
 
-    def format_branch(self, collector, instruction, name):
-        collector.add_node(instruction, name)
+    def format_branch(self, instruction, name):
+        self.add_node(instruction, name)
         on_success = instruction.next_instruction(exit_status=True)
         on_failure = instruction.next_instruction(exit_status=False)
         statistics = self.statistics[instruction.index]
-        collector.add_edge(instruction, on_success, label='True: {0.success_count}'.format(statistics))
-        collector.add_edge(instruction, on_failure, label='False: {0.failure_count}'.format(statistics))
+        self.add_edge(instruction, on_success, label='True: {0.success_count}'.format(statistics))
+        self.add_edge(instruction, on_failure, label='False: {0.failure_count}'.format(statistics))
 
 
 class Program(compiler_base.Program):
@@ -277,19 +247,17 @@ class Program(compiler_base.Program):
 
     def to_text(self, with_statistics=False):
         if with_statistics:
-            formatter = TextFormatterWithStatistics(self.statistics)
+            v = ToTextVisitorWithStatistics(self.statistics)
         else:
-            formatter = TextFormatter()
-        v = ToTextVisitor(formatter)
+            v = ToTextVisitor()
         self.accept(v)
         return v.text()
 
     def to_dot(self, with_statistics=False):
         if with_statistics:
-            formatter = DotFormatterWithStatistics(self.statistics)
+            v = ToDotVisitorWithStatistics(self.statistics)
         else:
-            formatter = DotFormatter()
-        v = ToDotVisitor(formatter)
+            v = ToDotVisitor()
         self.accept(v)
         return v.text()
 
