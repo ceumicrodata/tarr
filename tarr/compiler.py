@@ -80,8 +80,11 @@ class ToTextVisitor(compiler_base.ProgramVisitor):
         else:
             self.addline('END # {0}'.format(label))
 
+    def format_call_line(self, i_call):
+        return 'CALL "{0}"'.format(i_call.label)
+
     def visit_call(self, i_call):
-        self.format_branch(i_call, 'CALL "{0}"'.format(i_call.label))
+        self.format_branch(i_call, self.format_call_line(i_call))
 
     def visit_return(self, i_return):
         if i_return.return_value is None:
@@ -113,6 +116,10 @@ class ToTextVisitorWithStatistics(ToTextVisitor):
     def format_instruction(self, instruction, name):
         statistics = self.statistics[instruction.index]
         self.addcode(instruction, '{0}   (*{1.item_count})'.format(name, statistics))
+
+    def format_call_line(self, i_call):
+        statistics = self.statistics[i_call.index]
+        return 'CALL "{0}"    (*{1.item_count})'.format(i_call.label, statistics)
 
 
 class ToDotVisitor(compiler_base.ProgramVisitor):
@@ -233,6 +240,10 @@ class ToDotVisitorWithStatistics(ToDotVisitor):
         statistics = self.statistics[instruction.index]
         self.add_edge(instruction, on_success, label='True: {0.success_count}'.format(statistics))
         self.add_edge(instruction, on_failure, label='False: {0.failure_count}'.format(statistics))
+
+    def call_label(self, i_call):
+        statistics = self.statistics[i_call.index]
+        return str(statistics.item_count)
 
 
 class Program(compiler_base.Program):

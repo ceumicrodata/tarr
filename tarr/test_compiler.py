@@ -41,24 +41,26 @@ END OF MAIN PROGRAM
 DEF ("su"bprogram")
    2 odd
        # True  -> 3
-       # False -> 4
+       # False -> 5
    3 add1
-   4 RETURN True
+   4 RETURN False
+   5 RETURN True
 END # su"bprogram''')
 
 TEST_TO_TEXT_WITH_STATISTICS = (
-'''   0 CALL "su"bprogram"
-       # True  -> 1   (*1)
-       # False -> 1   (*0)
-   1 RETURN   (*1)
+'''   0 CALL "su"bprogram"    (*3)
+       # True  -> 1   (*2)
+       # False -> 1   (*1)
+   1 RETURN   (*3)
 END OF MAIN PROGRAM
 
 DEF ("su"bprogram")
    2 odd
-       # True  -> 3   (*0)
-       # False -> 4   (*1)
+       # True  -> 3   (*1)
+       # False -> 5   (*2)
    3 add1
-   4 RETURN True   (*1)
+   4 RETURN False   (*1)
+   5 RETURN True   (*2)
 END # su"bprogram''')
 
 TEST_TO_DOT_WITHOUT_STATISTICS = (
@@ -78,10 +80,11 @@ subgraph "cluster_su\"bprogram" {
 
     node_2 [label="odd"];
     node_2 -> node_3 [label="True"];
-    node_2 -> node_4 [label="False"];
+    node_2 -> node_5 [label="False"];
     node_3 [label="add1"];
     node_3 -> node_4;
-    node_4 [label="RETURN True"];
+    node_4 [label="RETURN False"];
+    node_5 [label="RETURN True"];
 }
 
 // inter-cluster-edges
@@ -95,24 +98,25 @@ compound = true;
 
 subgraph "cluster_None" {
     node_0 [label="CALL su\"bprogram"];
-    node_0 -> node_1 [label="True: 1"];
-    node_0 -> node_1 [label="False: 0"];
-    node_1 [label="RETURN: 1"];
+    node_0 -> node_1 [label="True: 2"];
+    node_0 -> node_1 [label="False: 1"];
+    node_1 [label="RETURN: 3"];
 }
 
 subgraph "cluster_su\"bprogram" {
     label = "su\"bprogram";
 
     node_2 [label="odd"];
-    node_2 -> node_3 [label="True: 0"];
-    node_2 -> node_4 [label="False: 1"];
+    node_2 -> node_3 [label="True: 1"];
+    node_2 -> node_5 [label="False: 2"];
     node_3 [label="add1"];
     node_3 -> node_4;
-    node_4 [label="RETURN True: 1"];
+    node_4 [label="RETURN False: 1"];
+    node_5 [label="RETURN True: 2"];
 }
 
 // inter-cluster-edges
-    node_0 -> node_2;
+    node_0 -> node_2 [label="3"];
 }''')
 
 
@@ -135,6 +139,7 @@ class Test_Program_visualization(unittest.TestCase):
         m.DEF ('su"bprogram'),
             m.IF (odd),
                 add1,
+                m.RETURN_FALSE,
             m.ENDIF,
         m.RETURN_TRUE
     ]
@@ -150,7 +155,6 @@ class Test_Program_visualization(unittest.TestCase):
     def test_to_text_without_statistics(self):
         prog = self.program()
 
-        prog.run(Data(id, 2))
         text = prog.to_text()
 
         self.assertEqualText(TEST_TO_TEXT_WITHOUT_STATISTICS, text)
@@ -158,6 +162,8 @@ class Test_Program_visualization(unittest.TestCase):
     def test_to_text_with_statistics(self):
         prog = self.program()
 
+        prog.run(Data(id, 1))
+        prog.run(Data(id, 2))
         prog.run(Data(id, 2))
         text = prog.to_text(with_statistics=True)
 
@@ -166,7 +172,6 @@ class Test_Program_visualization(unittest.TestCase):
     def test_to_dot_without_statistics(self):
         prog = self.program()
 
-        prog.run(Data(id, 2))
         text = prog.to_dot()
 
         self.assertEqualText(TEST_TO_DOT_WITHOUT_STATISTICS, text)
@@ -174,6 +179,8 @@ class Test_Program_visualization(unittest.TestCase):
     def test_to_dot_with_statistics(self):
         prog = self.program()
 
+        prog.run(Data(id, 1))
+        prog.run(Data(id, 2))
         prog.run(Data(id, 2))
         text = prog.to_dot(with_statistics=True)
 
