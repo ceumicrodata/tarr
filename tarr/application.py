@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 class Application(object):
 
-    ''' Facade of operations of batch data processing using DAG of processors.
+    ''' Facade of operations of batch data processing using an external, replacable `program`.
 
     This class is intended to be subclassed for defining the concrete operations.
 
@@ -143,6 +143,6 @@ class Application(object):
         self.batch = None
 
     def load_program(self):
-        '''Loads the job's DAG - the data processing logic'''
+        '''Loads the job's program - the data processing logic'''
 
         self.program = Program(dottedname_resolve(self.job.program_config).TARR_PROGRAM)
