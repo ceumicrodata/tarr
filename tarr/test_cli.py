@@ -2,9 +2,16 @@ import unittest
 import mock
 import tarr.cli as m # odule
 import tarr.application
+import tarr.model
 from tarr.model import Job, Batch
+# FIXME: db is external dependency!
 from db.db_test import TestConnection, SqlTestCase
 import pickle
+import tempdir
+
+import sys
+import contextlib
+from StringIO import StringIO
 
 # FIXME: tarr.cli: these tests are to be replaced with a test against a realistic, but simple test application (like one recording something known or easy to derive)
 # actually this is the trivial way for testing parallel processing, but would also give more confidence for the command line module
@@ -114,6 +121,74 @@ class Test_main_integration(SqlTestCase):
         m.main(args=args_list)
 
         self.assert_rows('SELECT job_name FROM tarr.job', [['job_name'], ['jobname']])
+
+
+def demo_process_job_args(destdir, jobname):
+    return m.parse_args(
+        TestConnection().as_args_list()
+        + 'create_job --application tarr.demo_app.DemoApp --program tarr.demo_app'.split()
+        + ['--source', destdir]
+        + [jobname])
+
+def process_job_args(jobname):
+    return m.parse_args(
+        TestConnection().as_args_list()
+        + ['process_job', jobname])
+
+def statistics_args(jobname):
+    return m.parse_args(
+        TestConnection().as_args_list()
+        + ['statistics', jobname])
+
+
+TEXT_STATISTICS = '''   0 is_processed
+       # True  -> 1   (*0)
+       # False -> 1   (*90)
+   1 set_processed
+   2 is_processed
+       # True  -> 3   (*90)
+       # False -> 3   (*0)
+   3 RETURN   (*90)
+END OF MAIN PROGRAM
+'''
+
+@contextlib.contextmanager
+def capture_stdout():
+    orig = sys.stdout
+    try:
+        captured_stdout = StringIO()
+        sys.stdout = captured_stdout
+        class Value:
+            @property
+            def value(self):
+                return captured_stdout.getvalue()
+        yield Value()
+    finally:
+        sys.stdout = orig
+
+
+class Test_StatisticsCommand(SqlTestCase):
+
+    def run_command(self, command_class, args):
+        command = command_class()
+        command.session = tarr.model.Session()
+        command.run(args)
+        command.session.rollback()
+        command.session.close()
+
+    def test(self):
+        # TODO: extract new test case class to run commands with a session
+        try:
+            tarr.model.init_from(TestConnection)
+            with tempdir.TempDir() as destdir:
+                jobname = 'jobname'
+                self.run_command(m.CreateJobCommand, demo_process_job_args(destdir.name, jobname))
+                self.run_command(m.ProcessJobCommand, process_job_args(jobname))
+                with capture_stdout() as stdout:
+                    self.run_command(m.StatisticsCommand, statistics_args(jobname))
+                self.assertEqual(TEXT_STATISTICS.splitlines(), stdout.value.splitlines())
+        finally:
+            tarr.model.shutdown()
 
 
 def make_db_safe(command):

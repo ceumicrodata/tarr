@@ -42,6 +42,9 @@ def parse_args(args=None):
     p = subparser('process_batch', description='Process a single batch')
     p.add_argument('batch_id', help='batch identifier')
 
+    p = subparser('statistics', description='Print job statistics per processor')
+    p.add_argument('name', help='job name')
+
     return parser.parse_args(args)
 
 
@@ -108,6 +111,18 @@ class ProcessJobCommand(Command):
         self.application.process_job()
 
 
+class StatisticsCommand(Command):
+
+    def run(self, args):
+        self.get_application_from_jobname(args.name)
+
+        self.application.load_program()
+        for batch in self.application.job.batches:
+            self.application.batch = batch
+            self.application.merge_batch_statistics()
+        print self.application.program.to_text(with_statistics=True)
+
+
 class ProcessBatchCommand(Command):
 
     def process_batch(self, batch_id):
@@ -162,7 +177,8 @@ COMMANDS = dict(
     process_job=ParallelProcessJobCommand,
     sequential_process_job=ProcessJobCommand,
     parallel_process_job=ParallelProcessJobCommand,
-    process_batch=ProcessBatchCommand)
+    process_batch=ProcessBatchCommand,
+    statistics=StatisticsCommand)
 
 
 def main(commands=None, args=None):
