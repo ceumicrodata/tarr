@@ -8,9 +8,6 @@ from tarr.model import Job, Batch
 from db.db_test import TestConnection, SqlTestCase
 import pickle
 import tempdir
-
-import sys
-import contextlib
 from StringIO import StringIO
 
 # FIXME: tarr.cli: these tests are to be replaced with a test against a realistic, but simple test application (like one recording something known or easy to derive)
@@ -152,21 +149,6 @@ TEXT_STATISTICS = '''   0 is_processed
 END OF MAIN PROGRAM
 '''
 
-@contextlib.contextmanager
-def capture_stdout():
-    orig = sys.stdout
-    try:
-        captured_stdout = StringIO()
-        sys.stdout = captured_stdout
-        class Value:
-            @property
-            def value(self):
-                return captured_stdout.getvalue()
-        yield Value()
-    finally:
-        sys.stdout = orig
-
-
 class Test_StatisticsCommand(SqlTestCase):
 
     def run_command(self, command_class, args):
@@ -184,9 +166,10 @@ class Test_StatisticsCommand(SqlTestCase):
                 jobname = 'jobname'
                 self.run_command(m.CreateJobCommand, demo_process_job_args(destdir.name, jobname))
                 self.run_command(m.ProcessJobCommand, process_job_args(jobname))
-                with capture_stdout() as stdout:
+                stdout = StringIO()
+                with mock.patch('sys.stdout', stdout):
                     self.run_command(m.StatisticsCommand, statistics_args(jobname))
-                self.assertEqual(TEXT_STATISTICS.splitlines(), stdout.value.splitlines())
+                self.assertEqual(TEXT_STATISTICS.splitlines(), stdout.getvalue().splitlines())
         finally:
             tarr.model.shutdown()
 
