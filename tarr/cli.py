@@ -9,7 +9,8 @@ from lib.parallel import map_parallel
 
 def parse_args(args=None):
     parser = argparse.ArgumentParser(
-        description='TARR Command line tool')
+        description='TARR Command line tool',
+        prog='python -m tarr')
 
     add_connection_options_to(parser)
 
