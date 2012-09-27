@@ -47,6 +47,8 @@ def parse_args(args=None):
 
     p = subparser('statistics', description='Print job statistics per processor')
     add_job_name(p)
+    p.add_argument('--dot', dest='output_format', action='store_const', const='dot', help='''output in GraphViz's DOT language''')
+    p.add_argument('--text', dest='output_format', default='text', action='store_const', const='text', help='''output in text (default)''')
 
     return parser.parse_args(args)
 
@@ -123,7 +125,12 @@ class StatisticsCommand(Command):
         for batch in self.application.job.batches:
             self.application.batch = batch
             self.application.merge_batch_statistics()
-        print self.application.program.to_text(with_statistics=True)
+
+        if args.output_format == 'dot':
+            stat = self.application.program.to_dot(with_statistics=True)
+        else:
+            stat = self.application.program.to_text(with_statistics=True)
+        print stat
 
 
 class ProcessBatchCommand(Command):

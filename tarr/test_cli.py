@@ -120,6 +120,24 @@ class Test_main_integration(SqlTestCase):
         self.assert_rows('SELECT job_name FROM tarr.job', [['job_name'], ['jobname']])
 
 
+class CommandTestCase(SqlTestCase):
+
+    def run_command(self, command_class, args):
+        command = command_class()
+        command.session = tarr.model.Session()
+        command.run(args)
+        command.session.rollback()
+        command.session.close()
+
+    def setUp(self):
+        super(CommandTestCase, self).setUp()
+        tarr.model.init_from(TestConnection)
+
+    def tearDown(self):
+        tarr.model.shutdown()
+        super(CommandTestCase, self).tearDown()
+
+
 def demo_process_job_args(destdir, jobname):
     return m.parse_args(
         TestConnection().as_args_list()
@@ -132,10 +150,15 @@ def process_job_args(jobname):
         TestConnection().as_args_list()
         + ['process_job', jobname])
 
-def statistics_args(jobname):
+def statistics_args(jobname, dot=False):
+    args = []
+    if dot:
+        args.append('--dot')
+    args.append(jobname)
     return m.parse_args(
         TestConnection().as_args_list()
-        + ['statistics', jobname])
+        + ['statistics']
+        + args)
 
 
 TEXT_STATISTICS = '''   0 is_processed
@@ -149,29 +172,43 @@ TEXT_STATISTICS = '''   0 is_processed
 END OF MAIN PROGRAM
 '''
 
-class Test_StatisticsCommand(SqlTestCase):
+DOT_STATISTICS = '''digraph {
 
-    def run_command(self, command_class, args):
-        command = command_class()
-        command.session = tarr.model.Session()
-        command.run(args)
-        command.session.rollback()
-        command.session.close()
+compound = true;
 
-    def test(self):
-        # TODO: extract new test case class to run commands with a session
-        try:
-            tarr.model.init_from(TestConnection)
-            with tempdir.TempDir() as destdir:
-                jobname = 'jobname'
-                self.run_command(m.CreateJobCommand, demo_process_job_args(destdir.name, jobname))
-                self.run_command(m.ProcessJobCommand, process_job_args(jobname))
-                stdout = StringIO()
-                with mock.patch('sys.stdout', stdout):
-                    self.run_command(m.StatisticsCommand, statistics_args(jobname))
-                self.assertEqual(TEXT_STATISTICS.splitlines(), stdout.getvalue().splitlines())
-        finally:
-            tarr.model.shutdown()
+subgraph "cluster_None" {
+    node_0 [label="is_processed"];
+    node_0 -> node_1 [label="True: 0"];
+    node_0 -> node_1 [label="False: 90"];
+    node_1 [label="set_processed"];
+    node_1 -> node_2;
+    node_2 [label="is_processed"];
+    node_2 -> node_3 [label="True: 90"];
+    node_2 -> node_3 [label="False: 0"];
+    node_3 [label="RETURN: 90"];
+}
+}
+'''
+
+class Test_StatisticsCommand(CommandTestCase):
+
+    def assert_output(self, expected_stdout, dot=False):
+        with tempdir.TempDir() as destdir:
+            jobname = 'jobname'
+            self.run_command(m.CreateJobCommand, demo_process_job_args(destdir.name, jobname))
+            self.run_command(m.ProcessJobCommand, process_job_args(jobname))
+
+            stdout = StringIO()
+            with mock.patch('sys.stdout', stdout):
+                self.run_command(m.StatisticsCommand, statistics_args(jobname, dot=dot))
+
+            self.assertEqual(expected_stdout.splitlines(), stdout.getvalue().splitlines())
+
+    def test_text_output(self):
+        self.assert_output(TEXT_STATISTICS)
+
+    def test_dot_output(self):
+        self.assert_output(DOT_STATISTICS, dot=True)
 
 
 def make_db_safe(command):
