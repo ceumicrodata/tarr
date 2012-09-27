@@ -19,8 +19,11 @@ def parse_args(args=None):
         p.set_defaults(command=name)
         return p
 
+    def add_job_name(parser):
+        parser.add_argument('name', help='job name')
+
     p = subparser('create_job', description='Create a new job')
-    p.add_argument('name', help='job name')
+    add_job_name(p)
     p.add_argument('--application', help='Application class reference - knows how to load and save data')
     p.add_argument('--program', help='python module having a TARR_PROGRAM')
     p.add_argument('--source', help='data to work on - application specific!')
@@ -28,22 +31,22 @@ def parse_args(args=None):
     p.add_argument('--description', default=None, help='words differentiating this job from others on the same data')
 
     p = subparser('delete_job', description='Delete an existing job')
-    p.add_argument('name', help='job name')
+    add_job_name(p)
 
     p = subparser('process_job', description='Start or continue processing an existing job')
-    p.add_argument('name', help='job name')
+    add_job_name(p)
 
     p = subparser('sequential_process_job', description='Start or continue processing an existing job one job after another')
-    p.add_argument('name', help='job name')
+    add_job_name(p)
 
     p = subparser('parallel_process_job',description='Start or continue processing an existing job batches are processed in parallel')
-    p.add_argument('name', help='job name')
+    add_job_name(p)
 
     p = subparser('process_batch', description='Process a single batch')
     p.add_argument('batch_id', help='batch identifier')
 
     p = subparser('statistics', description='Print job statistics per processor')
-    p.add_argument('name', help='job name')
+    add_job_name(p)
 
     return parser.parse_args(args)
 
