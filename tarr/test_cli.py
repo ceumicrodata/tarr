@@ -211,6 +211,24 @@ class Test_StatisticsCommand(CommandTestCase):
         self.assert_output(DOT_STATISTICS, dot=True)
 
 
+class Test_JobsCommand(CommandTestCase):
+
+    def test(self):
+        jobname1 = 'fancy_job_name1#@!{}$'
+        jobname2 = 'fancy_job_name2#x>@!$'
+        self.run_command(m.CreateJobCommand, demo_process_job_args('.', jobname1))
+        self.run_command(m.CreateJobCommand, demo_process_job_args('.', jobname2))
+
+        stdout = StringIO()
+        with mock.patch('sys.stdout', stdout):
+            jobs_args = m.parse_args(TestConnection().as_args_list() + ['jobs'])
+            self.run_command(m.JobsCommand, jobs_args)
+
+        output = stdout.getvalue().splitlines()
+        self.assertIn(jobname1, output)
+        self.assertIn(jobname2, output)
+
+
 def make_db_safe(command):
     command.session = mock.Mock()
     command.init_db = mock.Mock(command.init_db)

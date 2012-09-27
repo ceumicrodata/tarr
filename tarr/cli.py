@@ -23,6 +23,8 @@ def parse_args(args=None):
     def add_job_name(parser):
         parser.add_argument('name', help='job name')
 
+    subparser('jobs', description='List existing jobs')
+
     p = subparser('create_job', description='Create a new job')
     add_job_name(p)
     p.add_argument('--application', help='Application class reference - knows how to load and save data')
@@ -134,6 +136,13 @@ class StatisticsCommand(Command):
         print stat
 
 
+class JobsCommand(Command):
+
+    def run(self, args):
+        for job in self.session.query(db.Job):
+            print job.job_name
+
+
 class ProcessBatchCommand(Command):
 
     def process_batch(self, batch_id):
@@ -189,7 +198,8 @@ COMMANDS = dict(
     sequential_process_job=ProcessJobCommand,
     parallel_process_job=ParallelProcessJobCommand,
     process_batch=ProcessBatchCommand,
-    statistics=StatisticsCommand)
+    statistics=StatisticsCommand,
+    jobs=JobsCommand)
 
 
 def main(commands=None, args=None):
