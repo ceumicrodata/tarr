@@ -93,7 +93,6 @@ class Return(InstructionBase):
         visitor.visit_return(self)
 
 
-# FIXME: RETURN -> RETURN_WITH_CURRENT_CONDITION
 RETURN = Return()
 RETURN_TRUE = Return(return_value=True)
 RETURN_FALSE = Return(return_value=False)
