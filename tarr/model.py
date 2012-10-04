@@ -178,6 +178,7 @@ def init(sqlalchemy_engine):
     Call before using any db operation.
     '''
     global engine
+    assert engine is None, "TARR DB connection is already initialized?!"
     engine = sqlalchemy_engine
 
     # create missing objects

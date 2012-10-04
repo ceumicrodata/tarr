@@ -1,14 +1,21 @@
 import unittest
 import mock
+from tarr.test_case import DbTestCase, TarrApplicationTestCase
+
 import tarr.cli as m # odule
 import tarr.application
 import tarr.model
 from tarr.model import Job, Batch
-# FIXME: db, TestConnection, SqlTestCase is external dependency!
-from db.db_test import TestConnection, SqlTestCase
 import pickle
 import tempdir
 from StringIO import StringIO
+
+# FIXME: TestConnection is external dependency!
+from db.db_test import TestConnection
+
+
+TEST_CONNECTION_ARGS_LIST = TestConnection().as_args_list()
+
 
 # FIXME: tarr.cli: these tests are to be replaced with a test against a realistic, but simple test application (like one recording something known or easy to derive)
 # actually this is the trivial way for testing parallel processing, but would also give more confidence for the command line module
@@ -59,7 +66,7 @@ class Test_parse_args(unittest.TestCase):
 
     def test_process_batch(self):
         # parallel processing is working with pickle - or similar marshalling
-        args = TestConnection().as_args_list() + 'process_batch batch_id'.split()
+        args = TEST_CONNECTION_ARGS_LIST + 'process_batch batch_id'.split()
 
         parsed_args = m.parse_args(args)
 
@@ -105,11 +112,11 @@ class Test_main(unittest.TestCase):
         command_mock.shutdown.assert_called_once_with()
 
 
-class Test_main_integration(SqlTestCase):
+class Test_main_integration(DbTestCase):
 
     def test_create_job(self):
         args_list = (
-            TestConnection().as_args_list()
+            TEST_CONNECTION_ARGS_LIST
             + (
                 'create_job jobname --app=tarr.application.Application'
                 ' --program=tarr.fixtures.program'
@@ -117,37 +124,31 @@ class Test_main_integration(SqlTestCase):
 
         m.main(args=args_list)
 
-        self.assert_rows('SELECT job_name FROM tarr.job', [['job_name'], ['jobname']])
+        with self.new_session() as session:
+            job, = session.query(tarr.model.Job).all()
+            self.assertEqual('jobname', job.job_name)
 
 
-class CommandTestCase(SqlTestCase):
+class CommandTestCase(TarrApplicationTestCase):
 
     def run_command(self, command_class, args):
         command = command_class()
-        command.session = tarr.model.Session()
+        command.session = self.session
         command.run(args)
         command.session.rollback()
         command.session.close()
 
-    def setUp(self):
-        super(CommandTestCase, self).setUp()
-        tarr.model.init_from(TestConnection)
-
-    def tearDown(self):
-        tarr.model.shutdown()
-        super(CommandTestCase, self).tearDown()
-
 
 def demo_process_job_args(destdir, jobname):
     return m.parse_args(
-        TestConnection().as_args_list()
+        TEST_CONNECTION_ARGS_LIST
         + 'create_job --application tarr.demo_app.DemoApp --program tarr.demo_app'.split()
         + ['--source', destdir]
         + [jobname])
 
 def process_job_args(jobname):
     return m.parse_args(
-        TestConnection().as_args_list()
+        TEST_CONNECTION_ARGS_LIST
         + ['process_job', jobname])
 
 def statistics_args(jobname, dot=False):
@@ -156,7 +157,7 @@ def statistics_args(jobname, dot=False):
         args.append('--dot')
     args.append(jobname)
     return m.parse_args(
-        TestConnection().as_args_list()
+        TEST_CONNECTION_ARGS_LIST
         + ['statistics']
         + args)
 
@@ -221,7 +222,7 @@ class Test_JobsCommand(CommandTestCase):
 
         stdout = StringIO()
         with mock.patch('sys.stdout', stdout):
-            jobs_args = m.parse_args(TestConnection().as_args_list() + ['jobs'])
+            jobs_args = m.parse_args(TEST_CONNECTION_ARGS_LIST + ['jobs'])
             self.run_command(m.JobsCommand, jobs_args)
 
         output = stdout.getvalue().splitlines()

@@ -1,14 +1,13 @@
 import unittest
 import mock
 import os
+from tarr.test_case import TarrApplicationTestCase
 
 import logging
 from contextlib import contextmanager
 
 import tarr.application as m # odule
 import tarr.model
-# FIXME: db, TestConnection, SqlTestCase is external dependency!
-from db.db_test import TestConnection, SqlTestCase
 from datetime import datetime, timedelta
 
 
@@ -420,20 +419,7 @@ class Test_delete_batch(unittest.TestCase):
         self.assertIsNone(f.app.batch)
 
 
-class Test_statistics(SqlTestCase):
-
-    session = None
-
-    def setUp(self):
-        super(Test_statistics, self).setUp()
-        tarr.model.init_from(TestConnection)
-        self.session = tarr.model.Session()
-
-    def tearDown(self):
-        self.session.close()
-        self.session = None
-        tarr.model.shutdown()
-        super(Test_statistics, self).tearDown()
+class Test_statistics(TarrApplicationTestCase):
 
     def make_app(self):
         app = m.Application()
