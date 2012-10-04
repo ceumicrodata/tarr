@@ -4,7 +4,7 @@ import tarr.cli as m # odule
 import tarr.application
 import tarr.model
 from tarr.model import Job, Batch
-# FIXME: db is external dependency!
+# FIXME: db, TestConnection, SqlTestCase is external dependency!
 from db.db_test import TestConnection, SqlTestCase
 import pickle
 import tempdir

@@ -7,7 +7,8 @@ from contextlib import contextmanager
 
 import tarr.application as m # odule
 import tarr.model
-from db import db_test
+# FIXME: db, TestConnection, SqlTestCase is external dependency!
+from db.db_test import TestConnection, SqlTestCase
 from datetime import datetime, timedelta
 
 
@@ -419,13 +420,13 @@ class Test_delete_batch(unittest.TestCase):
         self.assertIsNone(f.app.batch)
 
 
-class Test_statistics(db_test.SqlTestCase):
+class Test_statistics(SqlTestCase):
 
     session = None
 
     def setUp(self):
         super(Test_statistics, self).setUp()
-        tarr.model.init_from(db_test.TestConnection)
+        tarr.model.init_from(TestConnection)
         self.session = tarr.model.Session()
 
     def tearDown(self):
