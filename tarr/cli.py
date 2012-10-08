@@ -1,10 +1,9 @@
 import argparse
-import tarr.model as db # FIXME: db -> model
 from db.connection import add_connection_options_to # FIXME: db.connection is external to TARR!
+from tarr import model
 from zope.dottedname.resolve import resolve as dottedname_resolve
 import itertools
-from lib.parallel import map_parallel
-
+from lib.parallel import map_parallel # FIXME: lib.parallel is external to TARR!
 
 
 def parse_args(args=None):
@@ -67,22 +66,22 @@ class Command(object):
         self.application.session = self.session
 
     def get_application_from_jobname(self, job_name):
-        job = self.session.query(db.Job).filter(db.Job.job_name==job_name).one()
+        job = self.session.query(model.Job).filter(model.Job.job_name==job_name).one()
         self.application = job.get_application_instance()
         self.application.session = self.session
 
     def get_application_from_batchid(self, batch_id):
-        batch = self.session.query(db.Batch).filter(db.Batch.batch_id==batch_id).one()
+        batch = self.session.query(model.Batch).filter(model.Batch.batch_id==batch_id).one()
         self.application = batch.job.get_application_instance()
         self.application.batch = batch
         self.application.session = self.session
 
     def init_db(self, args):
-        db.init_from(args)
-        self.session = db.Session()
+        model.init_from(args)
+        self.session = model.Session()
 
     def shutdown(self):
-        db.shutdown()
+        model.shutdown()
 
     def run(self, args):
         pass
@@ -139,7 +138,7 @@ class StatisticsCommand(Command):
 class JobsCommand(Command):
 
     def run(self, args):
-        for job in self.session.query(db.Job):
+        for job in self.session.query(model.Job):
             print job.job_name
 
 
