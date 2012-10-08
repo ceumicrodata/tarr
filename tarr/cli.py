@@ -3,7 +3,7 @@ from db.connection import add_connection_options_to # FIXME: db.connection is ex
 from tarr import model
 from zope.dottedname.resolve import resolve as dottedname_resolve
 import itertools
-from lib.parallel import map_parallel # FIXME: lib.parallel is external to TARR!
+import multiprocessing # http://pypi.python.org/pypi/billiard is a fork with bugfixes
 
 
 def parse_args(args=None):
@@ -166,8 +166,14 @@ class ParallelProcessJobCommand(Command):
         batch_ids = [batch.batch_id
             for batch in self.application.job.batches
             if not batch.is_processed]
-        map_parallel(process_batch_parallel,
-            zip(batch_ids, itertools.repeat(args)))
+
+        pool = multiprocessing.Pool(maxtasksperchild=1)
+        pool.map(
+            process_batch_parallel,
+            zip(batch_ids, itertools.repeat(args)),
+            chunksize=1)
+        pool.close()
+        pool.join()
 
 
 def _process_batch_parallel(parallel_arg):
