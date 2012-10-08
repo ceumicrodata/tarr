@@ -1,9 +1,17 @@
 import argparse
-from db.connection import add_connection_options_to # FIXME: db.connection is external to TARR!
 from tarr import model
 from zope.dottedname.resolve import resolve as dottedname_resolve
 import itertools
 import multiprocessing # http://pypi.python.org/pypi/billiard is a fork with bugfixes
+
+
+def add_connection_options_to(parser):
+    parser.add_argument('--ini', '--config',
+        dest='config', default='tarr.ini',
+        help='Config file defining the database connection, ... (%(default)s)')
+    parser.add_argument('--connection',
+        dest='tarr_connection', default='connection-tarr',
+        help='Section name in config file defining the database connection (%(default)s)')
 
 
 def parse_args(args=None):
@@ -41,7 +49,7 @@ def parse_args(args=None):
     p = subparser('sequential_process_job', description='Start or continue processing an existing job one job after another')
     add_job_name(p)
 
-    p = subparser('parallel_process_job',description='Start or continue processing an existing job batches are processed in parallel')
+    p = subparser('parallel_process_job', description='Start or continue processing an existing job batches are processed in parallel')
     add_job_name(p)
 
     p = subparser('process_batch', description='Process a single batch')

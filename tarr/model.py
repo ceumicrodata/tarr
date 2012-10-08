@@ -1,16 +1,16 @@
-import sqlalchemy as sa
 import sqlalchemy.orm
 from sqlalchemy.ext.declarative import declarative_base, Column
 from zope.dottedname.resolve import resolve as dottedname_resolve
 from datetime import timedelta
+from ConfigParser import ConfigParser
 
 
-Session = sa.orm.sessionmaker()
+Session = sqlalchemy.orm.sessionmaker()
 engine = None
 
 
 TARR_SCHEMA = 'tarr'
-meta = sa.MetaData(schema=TARR_SCHEMA)
+meta = sqlalchemy.MetaData(schema=TARR_SCHEMA)
 
 
 Base = declarative_base(metadata=meta)
@@ -20,18 +20,18 @@ class Job(Base):
 
     __tablename__ = 'job'
 
-    job_name = Column(sa.String, primary_key=True, nullable=False)
-    time_created = Column(sa.DateTime, server_default=sa.text('current_timestamp'))
-    application = Column(sa.String, nullable=False)
-    program_config = Column(sa.String)
-    program_config_hash = Column(sa.String)
-    partitioning_name = Column(sa.String)
-    source = Column(sa.String) # 'complex:rovat_13:pc' for data in complex db table rovat_13 selecting fields starting with 'pc': pcirsz, pchely, pcteru, ...
-    # params = Column(sa.Text) # (json?)
-    description = Column(sa.String)
+    job_name = Column(sqlalchemy.String, primary_key=True, nullable=False)
+    time_created = Column(sqlalchemy.DateTime, server_default=sqlalchemy.text('current_timestamp'))
+    application = Column(sqlalchemy.String, nullable=False)
+    program_config = Column(sqlalchemy.String)
+    program_config_hash = Column(sqlalchemy.String)
+    partitioning_name = Column(sqlalchemy.String)
+    source = Column(sqlalchemy.String) # 'complex:rovat_13:pc' for data in complex db table rovat_13 selecting fields starting with 'pc': pcirsz, pchely, pcteru, ...
+    # params = Column(sqlalchemy.Text) # (json?)
+    description = Column(sqlalchemy.String)
     # state (ongoing/finished?)
 
-    batches = sa.orm.relationship('Batch', back_populates='job')
+    batches = sqlalchemy.orm.relationship('Batch', back_populates='job')
 
     def get_application_instance(self):
         cls = dottedname_resolve(self.application)
@@ -60,15 +60,15 @@ class Batch(Base):
 
     __tablename__ = 'batch'
 
-    batch_id = Column(sa.Integer, primary_key=True, nullable=False)
-    job_name = Column(sa.String, sa.ForeignKey('job.job_name'))
-    job = sa.orm.relationship('Job', back_populates='batches')
-    source = Column(sa.String) # complex partition_id as string
+    batch_id = Column(sqlalchemy.Integer, primary_key=True, nullable=False)
+    job_name = Column(sqlalchemy.String, sqlalchemy.ForeignKey('job.job_name'))
+    job = sqlalchemy.orm.relationship('Job', back_populates='batches')
+    source = Column(sqlalchemy.String) # complex partition_id as string
 
-    time_completed = Column(sa.DateTime)
-    program_config_hash = Column(sa.String)
-    runstat_id = Column(sa.Integer, sa.ForeignKey('runstat.runstat_id'))
-    runstat = sa.orm.relationship('RunStatistic')
+    time_completed = Column(sqlalchemy.DateTime)
+    program_config_hash = Column(sqlalchemy.String)
+    runstat_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('runstat.runstat_id'))
+    runstat = sqlalchemy.orm.relationship('RunStatistic')
 
     @property
     def is_processed(self):
@@ -95,28 +95,28 @@ class RunStatistic(Base):
 
     __tablename__ = 'runstat'
 
-    runstat_id = Column(sa.Integer, primary_key=True, nullable=False)
+    runstat_id = Column(sqlalchemy.Integer, primary_key=True, nullable=False)
 
-    # item_count = Column(sa.Integer)
-    # run_time = Column(sa.Interval)
+    # item_count = Column(sqlalchemy.Integer)
+    # run_time = Column(sqlalchemy.Interval)
 
-    nodes = sa.orm.relationship('NodeStatistic', back_populates='runstat')
+    nodes = sqlalchemy.orm.relationship('NodeStatistic', back_populates='runstat')
 
 
 class NodeStatistic(Base):
 
     __tablename__ = 'nodestat'
 
-    nodestat_id = Column(sa.Integer, primary_key=True, nullable=False)
+    nodestat_id = Column(sqlalchemy.Integer, primary_key=True, nullable=False)
 
-    runstat_id = Column(sa.Integer, sa.ForeignKey('runstat.runstat_id'))
-    runstat = sa.orm.relationship('RunStatistic', back_populates='nodes')
+    runstat_id = Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('runstat.runstat_id'))
+    runstat = sqlalchemy.orm.relationship('RunStatistic', back_populates='nodes')
 
-    node_name = Column(sa.String)
-    item_count = Column(sa.Integer)
-    success_count = Column(sa.Integer)
-    failure_count = Column(sa.Integer)
-    run_time = Column(sa.Interval)
+    node_name = Column(sqlalchemy.String)
+    item_count = Column(sqlalchemy.Integer)
+    success_count = Column(sqlalchemy.Integer)
+    failure_count = Column(sqlalchemy.Integer)
+    run_time = Column(sqlalchemy.Interval)
 
     def init(self, node_name):
         self.node_name = node_name
@@ -156,7 +156,7 @@ def ensure_schema(sqlalchemy_engine, schema):
     c.execution_options(autocommit=True)
     try:
         c.execute('CREATE SCHEMA {}'.format(schema))
-    except sa.exc.ProgrammingError as e:
+    except sqlalchemy.exc.ProgrammingError as e:
         if 'already exists' not in e.message:
             raise
     finally:
@@ -187,9 +187,11 @@ def init(sqlalchemy_engine):
     Session.configure(bind=engine)
 
 
-def init_from(args):
-    connect_string = 'postgresql://{0.user}:{0.password}@{0.host}:{0.port}/{0.database}'.format(args)
-    init(sqlalchemy.create_engine(connect_string))
+def init_from(options):
+    config = ConfigParser()
+    config.read(options.config)
+    connection_config = dict(config.items(options.tarr_connection))
+    init(sqlalchemy.engine_from_config(connection_config))
 
 
 def shutdown():

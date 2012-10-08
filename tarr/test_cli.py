@@ -14,7 +14,7 @@ from StringIO import StringIO
 from db.db_test import TestConnection
 
 
-TEST_CONNECTION_ARGS_LIST = TestConnection().as_args_list()
+TEST_CONNECTION_ARGS_LIST = '--ini test.ini --connection connection-tarr-test'.split()
 
 
 # FIXME: tarr.cli: these tests are to be replaced with a test against a realistic, but simple test application (like one recording something known or easy to derive)

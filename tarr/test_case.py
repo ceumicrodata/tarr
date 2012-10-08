@@ -9,7 +9,7 @@ import tarr.model
 test_cfg = ConfigParser()
 test_cfg.read('test.ini')
 admin_connection_config = dict(test_cfg.items('connection-testdb-admin'))
-test_connection_config = dict(test_cfg.items('connection-tarr'))
+test_connection_config = dict(test_cfg.items('connection-tarr-test'))
 testdb_admin_commands = dict(test_cfg.items('commands-testdb-admin'))
 
 
