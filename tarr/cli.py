@@ -175,6 +175,8 @@ class ParallelProcessJobCommand(Command):
             for batch in self.application.job.batches
             if not batch.is_processed]
 
+        model.shutdown()
+
         pool = multiprocessing.Pool(maxtasksperchild=1)
         pool.map(
             process_batch_parallel,
