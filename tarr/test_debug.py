@@ -23,3 +23,11 @@ class Test_WRITE_TO_FILE(unittest.TestCase):
                     ['id: payload\n',
                     '1: Data\n'],
                     f.readlines())
+
+    def test_returns_data_as_is(self):
+        with tempdir.TempDir() as d:
+            tempfile = os.path.join(d.name, 'tempfile')
+            p = self.program(tempfile)
+
+            d = Data('id', 'payload')
+            self.assertEqual(d, p.run(d))
