@@ -10,9 +10,6 @@ import pickle
 import tempdir
 from StringIO import StringIO
 
-# FIXME: TestConnection is external dependency!
-from db.db_test import TestConnection
-
 
 TEST_CONNECTION_ARGS_LIST = '--ini test.ini --connection connection-tarr-test'.split()
 
