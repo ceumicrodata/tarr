@@ -6,7 +6,8 @@ from datetime import datetime
 from .compiler_base import (
     Instruction, BranchingInstruction,
     RETURN, RETURN_TRUE, RETURN_FALSE,
-    DEF, IF, ELIF, ELSE, ENDIF)
+    DEF, IF, ELIF, ELSE, ENDIF,
+    IF_NOT)
 
 
 class StatisticsCollectorRunner(compiler_base.Runner):
@@ -337,4 +338,5 @@ __all__ = [
     branch, rule,
     RETURN, RETURN_TRUE, RETURN_FALSE,
     DEF, IF, ELIF, ELSE, ENDIF,
+    IF_NOT,
 ]

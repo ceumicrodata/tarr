@@ -202,6 +202,20 @@ class CompileIf(Compilable):
 IF = CompileIf
 
 
+class CompileIfNot(CompileIf):
+
+    def compile(self, compiler):
+        super(CompileIfNot, self).compile(compiler)
+        frame = compiler.control_stack.pop()
+        compiler.control_stack.append(frame)
+        # swap if_path and else_path
+        frame.if_path, frame.else_path = frame.else_path, frame.if_path
+
+        compiler.path = frame.if_path
+
+IF_NOT = CompileIfNot
+
+
 class CompileElIf(Compilable):
 
     def __init__(self, branch_instruction):
