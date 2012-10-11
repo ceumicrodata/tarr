@@ -8,13 +8,6 @@ from .compiler_base import (
     RETURN, RETURN_TRUE, RETURN_FALSE,
     DEF, IF, ELIF, ELSE, ENDIF)
 
-__all__ = [
-    'Program',
-    'branch', 'rule',
-    'RETURN', 'RETURN_TRUE', 'RETURN_FALSE',
-    'DEF', 'IF', 'ELIF', 'ELSE', 'ENDIF',
-]
-
 
 class StatisticsCollectorRunner(compiler_base.Runner):
 
@@ -337,3 +330,11 @@ def branch(func):
     '''
     func.compile = TarrBranchInstruction(func).compile
     return func
+
+
+__all__ = [
+    Program,
+    branch, rule,
+    RETURN, RETURN_TRUE, RETURN_FALSE,
+    DEF, IF, ELIF, ELSE, ENDIF,
+]
