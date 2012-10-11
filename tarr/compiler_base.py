@@ -193,8 +193,8 @@ class CompileIf(Compilable):
     def compile(self, compiler):
         branch_instruction = compiler.compilable(self.branch_instruction)
         branch_instruction.compile(compiler)
-        false_path = compiler.path.split(compiler.last_instruction)
-        compiler.control_stack.append(IfElseControlFrame(compiler.path, false_path))
+        else_path = compiler.path.split(compiler.last_instruction)
+        compiler.control_stack.append(IfElseControlFrame(compiler.path, else_path))
 
 IF = CompileIf
 
@@ -205,7 +205,7 @@ class CompileElse(Compilable):
         frame = compiler.control_stack[-1]
         if frame.else_used:
             raise MultipleElseError
-        compiler.path = frame.false_path
+        compiler.path = frame.else_path
         frame.else_used = True
 
 ELSE = CompileElse()
@@ -215,8 +215,8 @@ class CompileEndIf(Compilable):
 
     def compile(self, compiler):
         frame = compiler.control_stack.pop()
-        compiler.path = frame.true_path
-        compiler.path.join(frame.false_path)
+        compiler.path = frame.if_path
+        compiler.path.join(frame.else_path)
 
 ENDIF = CompileEndIf()
 
@@ -349,9 +349,9 @@ class Path(object):
 
 class IfElseControlFrame(object):
 
-    def __init__(self, true_path, false_path):
-        self.true_path = true_path
-        self.false_path = false_path
+    def __init__(self, if_path, else_path):
+        self.if_path = if_path
+        self.else_path = else_path
         self.else_used = False
 
 
