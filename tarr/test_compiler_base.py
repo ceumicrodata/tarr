@@ -4,7 +4,7 @@ from tarr.compiler_base import (
     Instruction, BranchingInstruction,
     RETURN, RETURN_TRUE, RETURN_FALSE,
     DEF, IF, ELSE, ELIF, ENDIF,
-    IF_NOT,
+    IF_NOT, ELIF_NOT,
     DuplicateLabelError, UndefinedLabelError, BackwardReferenceError,
     FallOverOnDefineError, UnclosedProgramError, MissingEndIfError,
     MultipleElseError, ElIfAfterElseError)
@@ -413,11 +413,31 @@ class Test_Program(unittest.TestCase):
         self.assertEqual('ELIF2.', prog.run('variant2'))
         self.assertEqual('ELSE.', prog.run('unknown'))
 
+    def test_IF_ELIF_NOT_ELSE(self):
+        prog = self.program([
+            IF (Eq('value')),
+                Const('IF'),
+            ELIF_NOT (Eq('variant')),
+                # not variant
+                Const('ELIF_NOT'),
+            ELSE,
+                # variant
+                Const('ELSE'),
+            ENDIF,
+            Add('.'),
+            RETURN])
+
+        self.assertEqual('IF.', prog.run('value'))
+        self.assertEqual('ELIF_NOT.', prog.run('not_variant'))
+        self.assertEqual('ELSE.', prog.run('variant'))
+
     def test_IF_NOT_ELSE(self):
         prog = self.program([
             IF_NOT (Eq('value')),
+                # not value
                 Const('IF_NOT'),
             ELSE,
+                # value
                 Const('ELSE'),
             ENDIF,
             Add('.'),

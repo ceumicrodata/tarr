@@ -240,6 +240,20 @@ class CompileElIf(Compilable):
 ELIF = CompileElIf
 
 
+class CompileElIfNot(CompileElIf):
+
+    def compile(self, compiler):
+        super(CompileElIfNot, self).compile(compiler)
+        frame = compiler.control_stack.pop()
+        compiler.control_stack.append(frame)
+        # swap elif_path and else_path
+        frame.elif_path, frame.else_path = frame.else_path, frame.elif_path
+
+        compiler.path = frame.elif_path
+
+ELIF_NOT = CompileElIfNot
+
+
 class CompileElse(Compilable):
 
     def compile(self, compiler):
