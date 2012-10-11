@@ -3,17 +3,8 @@ import tarr.compiler_base as m
 from tarr.compiler_base import (
     Instruction, BranchingInstruction,
     RETURN, RETURN_TRUE, RETURN_FALSE,
-    DEF, IF, ELSE, ENDIF,
+    DEF, IF, ELSE, ELIF, ENDIF,
     DuplicateLabelError, UndefinedLabelError, BackwardReferenceError, FallOverOnDefineError, UnclosedProgramError, MissingEndIfError, MultipleElseError)
-
-
-class Add1(Instruction):
-
-    def run(self, runner, state):
-        result = state + 1
-        return result
-
-Add1 = Add1()
 
 
 class Div2(Instruction):
@@ -33,18 +24,49 @@ class IsOdd(BranchingInstruction):
 IsOdd = IsOdd()
 
 
-class Die(Instruction):
-
-    def run(self, state):
-        raise Exception('')
-
-Die = Die()
-
-
 class Noop(Instruction):
     pass
 
 Noop = Noop()
+
+
+class Eq(BranchingInstruction):
+
+    def __init__(self, value):
+        self.value = value
+
+    def run(self, runner, state):
+        runner.set_exit_status(state == self.value)
+        return state
+
+    def clone(self):
+        return self.__class__(self.value)
+
+
+class Const(Instruction):
+
+    def __init__(self, value):
+        self.value = value
+
+    def run(self, runner, state):
+        return self.value
+
+    def clone(self):
+        return self.__class__(self.value)
+
+
+class Add(Instruction):
+
+    def __init__(self, value):
+        self.value = value
+
+    def run(self, runner, state):
+        return state + self.value
+
+    def clone(self):
+        return self.__class__(self.value)
+
+Add1 = Add(1)
 
 
 def next_instruction(i):
@@ -368,6 +390,25 @@ class Test_Program(unittest.TestCase):
         self.assertEqual(3, prog.run(0))
         self.assertEqual(3, prog.run(1))
         self.assertEqual(5, prog.run(2))
+
+    def test_IF_ELIF_ELSE(self):
+        prog = self.program([
+            IF (Eq('a')),
+                Const('IF'),
+            ELIF (Eq('b')),
+                Const('ELIF1'),
+            ELIF (Eq('c')),
+                Const('ELIF2'),
+            ELSE,
+                Const('ELSE'),
+            ENDIF,
+            Add('.'),
+            RETURN])
+
+        self.assertEqual('IF.', prog.run('a'))
+        self.assertEqual('ELIF1.', prog.run('b'))
+        self.assertEqual('ELIF2.', prog.run('c'))
+        self.assertEqual('ELSE.', prog.run('?'))
 
     def test_embedded_IFs(self):
         prog = self.program([

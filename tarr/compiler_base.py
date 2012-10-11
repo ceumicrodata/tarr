@@ -199,6 +199,28 @@ class CompileIf(Compilable):
 IF = CompileIf
 
 
+class CompileElIf(Compilable):
+
+    def __init__(self, branch_instruction):
+        self.branch_instruction = branch_instruction
+
+    def compile(self, compiler):
+        frame = compiler.control_stack.pop()
+
+        if frame.elif_path is not None:
+            frame.if_path.join(frame.elif_path)
+
+        frame.elif_path = frame.else_path
+        compiler.path = frame.elif_path
+        branch_instruction = compiler.compilable(self.branch_instruction)
+        branch_instruction.compile(compiler)
+        frame.else_path = compiler.path.split(compiler.last_instruction)
+
+        compiler.control_stack.append(frame)
+
+ELIF = CompileElIf
+
+
 class CompileElse(Compilable):
 
     def compile(self, compiler):
@@ -215,8 +237,10 @@ class CompileEndIf(Compilable):
 
     def compile(self, compiler):
         frame = compiler.control_stack.pop()
+        if frame.elif_path is not None:
+            frame.if_path.join(frame.elif_path)
+        frame.if_path.join(frame.else_path)
         compiler.path = frame.if_path
-        compiler.path.join(frame.else_path)
 
 ENDIF = CompileEndIf()
 
@@ -351,6 +375,7 @@ class IfElseControlFrame(object):
 
     def __init__(self, if_path, else_path):
         self.if_path = if_path
+        self.elif_path = None
         self.else_path = else_path
         self.else_used = False
 
