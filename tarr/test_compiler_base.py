@@ -396,11 +396,11 @@ class Test_Program(unittest.TestCase):
 
     def test_IF_ELIF_ELSE(self):
         prog = self.program([
-            IF (Eq('a')),
+            IF (Eq('value')),
                 Const('IF'),
-            ELIF (Eq('b')),
+            ELIF (Eq('variant1')),
                 Const('ELIF1'),
-            ELIF (Eq('c')),
+            ELIF (Eq('variant2')),
                 Const('ELIF2'),
             ELSE,
                 Const('ELSE'),
@@ -408,14 +408,14 @@ class Test_Program(unittest.TestCase):
             Add('.'),
             RETURN])
 
-        self.assertEqual('IF.', prog.run('a'))
-        self.assertEqual('ELIF1.', prog.run('b'))
-        self.assertEqual('ELIF2.', prog.run('c'))
-        self.assertEqual('ELSE.', prog.run('?'))
+        self.assertEqual('IF.', prog.run('value'))
+        self.assertEqual('ELIF1.', prog.run('variant1'))
+        self.assertEqual('ELIF2.', prog.run('variant2'))
+        self.assertEqual('ELSE.', prog.run('unknown'))
 
     def test_IF_NOT_ELSE(self):
         prog = self.program([
-            IF_NOT (Eq('a')),
+            IF_NOT (Eq('value')),
                 Const('IF_NOT'),
             ELSE,
                 Const('ELSE'),
@@ -423,8 +423,8 @@ class Test_Program(unittest.TestCase):
             Add('.'),
             RETURN])
 
-        self.assertEqual('IF_NOT.', prog.run('?'))
-        self.assertEqual('ELSE.', prog.run('a'))
+        self.assertEqual('IF_NOT.', prog.run('unkown'))
+        self.assertEqual('ELSE.', prog.run('value'))
 
     def test_compilation_with_ELIF_after_ELSE_is_not_possible(self):
         with self.assertRaises(ElIfAfterElseError):
