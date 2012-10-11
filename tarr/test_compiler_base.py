@@ -4,7 +4,7 @@ from tarr.compiler_base import (
     Instruction, BranchingInstruction,
     RETURN, RETURN_TRUE, RETURN_FALSE,
     DEF, IF, ELSE, ELIF, ENDIF,
-    DuplicateLabelError, UndefinedLabelError, BackwardReferenceError, FallOverOnDefineError, UnclosedProgramError, MissingEndIfError, MultipleElseError)
+    DuplicateLabelError, UndefinedLabelError, BackwardReferenceError, FallOverOnDefineError, UnclosedProgramError, MissingEndIfError, MultipleElseError, ElIfAfterElseError)
 
 
 class Div2(Instruction):
@@ -409,6 +409,10 @@ class Test_Program(unittest.TestCase):
         self.assertEqual('ELIF1.', prog.run('b'))
         self.assertEqual('ELIF2.', prog.run('c'))
         self.assertEqual('ELSE.', prog.run('?'))
+
+    def test_compilation_with_ELIF_after_ELSE_is_not_possible(self):
+        with self.assertRaises(ElIfAfterElseError):
+            self.program([IF (IsOdd), ELSE, ELIF (IsOdd), ENDIF, RETURN])
 
     def test_embedded_IFs(self):
         prog = self.program([

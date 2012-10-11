@@ -19,6 +19,9 @@ class MissingEndIfError(Exception):
 class MultipleElseError(Exception):
     pass
 
+class ElIfAfterElseError(Exception):
+    pass
+
 
 class Compilable(object):
 
@@ -207,6 +210,8 @@ class CompileElIf(Compilable):
     def compile(self, compiler):
         frame = compiler.control_stack.pop()
 
+        if frame.else_used:
+            raise ElIfAfterElseError
         if frame.elif_path is not None:
             frame.if_path.join(frame.elif_path)
 
