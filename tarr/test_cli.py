@@ -112,6 +112,11 @@ class Test_main(unittest.TestCase):
 class Test_main_integration(DbTestCase):
 
     def test_create_job(self):
+        # setup schema in test database
+        tarr.model.init(self.db_engine)
+        tarr.model.init_meta_with_schema(tarr.model.meta)
+        tarr.model.shutdown()
+
         args_list = (
             TEST_CONNECTION_ARGS_LIST
             + (

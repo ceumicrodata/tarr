@@ -58,6 +58,7 @@ class TarrApplicationTestCase(DbTestCase):
     def setUp(self):
         super(TarrApplicationTestCase, self).setUp()
         tarr.model.init(self.db_engine)
+        tarr.model.init_meta_with_schema(tarr.model.meta)
         self.session = tarr.model.Session()
 
     def tearDown(self):

@@ -180,8 +180,8 @@ def init(sqlalchemy_engine):
     assert engine is None, "TARR DB connection is already initialized?!"
     engine = sqlalchemy_engine
 
-    # create missing objects
-    init_meta_with_schema(meta)
+    # # create missing objects
+    # init_meta_with_schema(meta)
 
     Session.configure(bind=engine)
 
