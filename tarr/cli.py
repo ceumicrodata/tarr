@@ -1,8 +1,10 @@
 import argparse
 from tarr import model
+import sqlalchemy
 from zope.dottedname.resolve import resolve as dottedname_resolve
 import itertools
 import multiprocessing # http://pypi.python.org/pypi/billiard is a fork with bugfixes
+from ConfigParser import ConfigParser
 
 
 def add_connection_options_to(parser):
@@ -85,7 +87,10 @@ class Command(object):
         self.application.session = self.session
 
     def init_db(self, args):
-        model.init_from(args)
+        config = ConfigParser()
+        config.read(args.config)
+        connection_config = dict(config.items(args.tarr_connection))
+        model.init(sqlalchemy.engine_from_config(connection_config))
         self.session = model.Session()
 
     def shutdown(self):

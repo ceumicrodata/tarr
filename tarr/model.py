@@ -2,7 +2,6 @@ import sqlalchemy.orm
 from sqlalchemy.ext.declarative import declarative_base, Column
 from zope.dottedname.resolve import resolve as dottedname_resolve
 from datetime import timedelta
-from ConfigParser import ConfigParser
 
 
 Session = sqlalchemy.orm.sessionmaker()
@@ -185,13 +184,6 @@ def init(sqlalchemy_engine):
     init_meta_with_schema(meta)
 
     Session.configure(bind=engine)
-
-
-def init_from(options):
-    config = ConfigParser()
-    config.read(options.config)
-    connection_config = dict(config.items(options.tarr_connection))
-    init(sqlalchemy.engine_from_config(connection_config))
 
 
 def shutdown():
