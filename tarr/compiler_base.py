@@ -207,11 +207,12 @@ class CompileIfNot(CompileIf):
     def compile(self, compiler):
         super(CompileIfNot, self).compile(compiler)
         frame = compiler.control_stack.pop()
-        compiler.control_stack.append(frame)
+
         # swap if_path and else_path
         frame.if_path, frame.else_path = frame.else_path, frame.if_path
 
         compiler.path = frame.if_path
+        compiler.control_stack.append(frame)
 
 IF_NOT = CompileIfNot
 

@@ -33,41 +33,37 @@ class Noop(Instruction):
 Noop = Noop()
 
 
-class Eq(BranchingInstruction):
+class ValueMixin(object):
 
     def __init__(self, value):
         self.value = value
+
+    def clone(self):
+        return self.__class__(self.value)
+
+    @property
+    def instruction_name(self):
+        return '{}({})'.format(self.__class__.__name__, self.value)
+
+
+class Eq(ValueMixin, BranchingInstruction):
 
     def run(self, runner, state):
         runner.set_exit_status(state == self.value)
         return state
 
-    def clone(self):
-        return self.__class__(self.value)
 
-
-class Const(Instruction):
-
-    def __init__(self, value):
-        self.value = value
+class Const(ValueMixin, Instruction):
 
     def run(self, runner, state):
         return self.value
 
-    def clone(self):
-        return self.__class__(self.value)
 
-
-class Add(Instruction):
-
-    def __init__(self, value):
-        self.value = value
+class Add(ValueMixin, Instruction):
 
     def run(self, runner, state):
         return state + self.value
 
-    def clone(self):
-        return self.__class__(self.value)
 
 Add1 = Add(1)
 
@@ -365,6 +361,21 @@ class Test_Program(unittest.TestCase):
         self.assertEqual(1, prog.run(0))
         self.assertEqual(3, prog.run(1))
         self.assertEqual(3, prog.run(2))
+
+    def test_IF_NOT(self):
+        prog = self.program([
+            IF_NOT (Eq('value')),
+                Const('IF_NOT'),
+                IF_NOT (Eq('value')),
+                    Const('IF_NOT'),
+                    # here we have the bug: this path is merged to here, but outside this path is *ignored*, its ELSE path is merged
+                ENDIF,
+            ENDIF,
+            Add('.'),
+            RETURN])
+
+        self.assertEqual('value.', prog.run('value'))
+        self.assertEqual('IF_NOT.', prog.run('?'))
 
     def test_ELSE(self):
         prog = self.program([
