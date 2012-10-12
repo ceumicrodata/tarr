@@ -196,8 +196,11 @@ class CompileIf(Compilable):
     def compile(self, compiler):
         branch_instruction = compiler.compilable(self.branch_instruction)
         branch_instruction.compile(compiler)
-        else_path = compiler.path.split(compiler.last_instruction)
-        compiler.control_stack.append(IfElseControlFrame(compiler.path, else_path))
+
+        if_path, else_path = compiler.path.split(compiler.last_instruction)
+        compiler.control_stack.append(IfElseControlFrame(compiler.path, if_path, else_path))
+
+        compiler.path = if_path
 
 IF = CompileIf
 
@@ -230,11 +233,12 @@ class CompileElIf(Compilable):
         if frame.elif_path is not None:
             frame.if_path.join(frame.elif_path)
 
-        frame.elif_path = frame.else_path
-        compiler.path = frame.elif_path
+        compiler.path = frame.else_path
         branch_instruction = compiler.compilable(self.branch_instruction)
         branch_instruction.compile(compiler)
-        frame.else_path = compiler.path.split(compiler.last_instruction)
+
+        frame.elif_path, frame.else_path = frame.else_path.split(compiler.last_instruction)
+        compiler.path = frame.elif_path
 
         compiler.control_stack.append(frame)
 
@@ -246,11 +250,12 @@ class CompileElIfNot(CompileElIf):
     def compile(self, compiler):
         super(CompileElIfNot, self).compile(compiler)
         frame = compiler.control_stack.pop()
-        compiler.control_stack.append(frame)
+
         # swap elif_path and else_path
         frame.elif_path, frame.else_path = frame.else_path, frame.elif_path
-
         compiler.path = frame.elif_path
+
+        compiler.control_stack.append(frame)
 
 ELIF_NOT = CompileElIfNot
 
@@ -258,11 +263,15 @@ ELIF_NOT = CompileElIfNot
 class CompileElse(Compilable):
 
     def compile(self, compiler):
-        frame = compiler.control_stack[-1]
+        frame = compiler.control_stack.pop()
+
         if frame.else_used:
             raise MultipleElseError
+
         compiler.path = frame.else_path
         frame.else_used = True
+
+        compiler.control_stack.append(frame)
 
 ELSE = CompileElse()
 
@@ -271,10 +280,13 @@ class CompileEndIf(Compilable):
 
     def compile(self, compiler):
         frame = compiler.control_stack.pop()
+
+        frame.main_path.join(frame.if_path)
         if frame.elif_path is not None:
-            frame.if_path.join(frame.elif_path)
-        frame.if_path.join(frame.else_path)
-        compiler.path = frame.if_path
+            frame.main_path.join(frame.elif_path)
+        frame.main_path.join(frame.else_path)
+
+        compiler.path = frame.main_path
 
 ENDIF = CompileEndIf()
 
@@ -287,6 +299,10 @@ class Appender(object):
 
     def append(self, instruction):
         pass
+
+
+class NoopAppender(Appender):
+    pass
 
 
 class InstructionAppender(Appender):
@@ -381,10 +397,12 @@ class Path(object):
         self.appender.append(instruction)
 
     def split(self, branch_instruction):
-        self.set_appender(TrueBranchAppender(self, branch_instruction))
+        self.close()
+        true_path = Path()
+        true_path.set_appender(TrueBranchAppender(true_path, branch_instruction))
         false_path = Path()
         false_path.set_appender(FalseBranchAppender(false_path, branch_instruction))
-        return false_path
+        return true_path, false_path
 
     def join(self, path):
         self._closed = self.is_closed and path.is_closed
@@ -402,12 +420,26 @@ class Path(object):
         return self._closed
 
     def close(self):
+        self.set_appender(NoopAppender())
         self._closed = True
 
 
 class IfElseControlFrame(object):
 
-    def __init__(self, if_path, else_path):
+    '''
+    Records paths for IF, IF_NOT, ELIF, ELIF_NOT, ELSE, ENDIF
+
+    * main_path: stored when entering IF or IF_NOT, restored on ENDIF,
+                 not used in between
+    * if_path:   the first conditional path to define
+    * elif_path: optional, used by ELIF to keep the current conditional path
+    * else_path: ELSE branch goes here
+
+    ENDIF merges if_path, elif_path, else_path back to main_path, before restoring
+    '''
+
+    def __init__(self, main_path, if_path, else_path):
+        self.main_path = main_path
         self.if_path = if_path
         self.elif_path = None
         self.else_path = else_path
