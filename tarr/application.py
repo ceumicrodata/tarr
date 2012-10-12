@@ -30,8 +30,7 @@ class Application(object):
     batch = None
 
     def setup(self):
-        '''Create application specific schema here'''
-        pass
+        '''Override to create application specific schema'''
 
     def create_job(self, name, program_config, source, partitioning_name, description):
         self.job = Job()

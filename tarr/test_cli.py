@@ -424,3 +424,36 @@ class Test_Command_get_application_from_batchid(unittest.TestCase):
         mock_job.get_application_instance.assert_called_once_with()
         self.assertEqual(mock_batch, command.application.batch)
         self.assertEqual(command.session, command.application.session)
+
+
+class Test_InitCommand(DbTestCase):
+
+    def setUp(self):
+        super(Test_InitCommand, self).setUp()
+        tarr.model.init(self.db_engine)
+
+    def tearDown(self):
+        tarr.model.shutdown()
+        super(Test_InitCommand, self).tearDown()
+
+    def test_Job_table_available(self):
+        args = m.parse_args(TEST_CONNECTION_ARGS_LIST + ['init'])
+        command = m.InitCommand()
+        with self.new_session() as session:
+            command.session = session
+            command.run(args)
+
+        job = tarr.model.Job()
+        job.job_name = 'developer'
+        job.application = 'typewriter'
+
+        with self.new_session() as session:
+            session.add(job)
+            session.commit()
+            session.expunge_all()
+
+        with self.new_session() as session:
+            job_from_db, = session.query(tarr.model.Job).all()
+
+            self.assertIsNot(job, job_from_db)
+            self.assertEqual('developer', job_from_db.job_name)

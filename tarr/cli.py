@@ -34,6 +34,8 @@ def parse_args(args=None):
 
     subparser('jobs', description='List existing jobs')
 
+    subparser('init', description='Create initial TARR DB Schema (only if not already done)')
+
     p = subparser('create_job', description='Create a new job')
     add_job_name(p)
     p.add_argument('--application', help='Application class reference - knows how to load and save data')
@@ -98,6 +100,12 @@ class Command(object):
 
     def run(self, args):
         pass
+
+
+class InitCommand(Command):
+
+    def run(self, args):
+        model.init_meta_with_schema(model.meta)
 
 
 class CreateJobCommand(Command):
