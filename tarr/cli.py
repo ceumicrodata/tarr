@@ -239,13 +239,12 @@ class Cli(object):
             ('statistics', StatisticsCommand, 'Print job statistics per processor'),
             ]
 
-
-def parse_args(args=None):
-    return Cli().parser.parse_args(args)
+    def parse_args(self, args=None):
+        return self.parser.parse_args(args)
 
 
 def main(commands=None, args=None):
-    parsed_args = parse_args(args)
+    parsed_args = Cli().parse_args(args)
     commands = commands or COMMANDS
     command_class = commands[parsed_args.command]
 

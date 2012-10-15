@@ -82,10 +82,10 @@ class Test_Cli(unittest.TestCase):
         pass
 
 
-class Test_parse_args(unittest.TestCase):
+class Test_Cli_parse_args(unittest.TestCase):
 
     def test_create_job(self):
-        args = m.parse_args(
+        args = m.Cli().parse_args(
             (
                 'create_job jobname --app=location.clean.Application --program=program-config --source=complex:rovat_13:pm'
                 ' --partitioning_name=every_200'
@@ -101,13 +101,13 @@ class Test_parse_args(unittest.TestCase):
         self.assertEqual('a description', args.description)
 
     def test_delete_job(self):
-        args = m.parse_args('delete_job jobname'.split())
+        args = m.Cli().parse_args('delete_job jobname'.split())
 
         self.assertEqual('delete_job', args.command)
         self.assertEqual('jobname', args.name)
 
     def check_process_job(self, command):
-        args = m.parse_args([command, 'jobname'])
+        args = m.Cli().parse_args([command, 'jobname'])
 
         self.assertEqual(command, args.command)
         self.assertEqual('jobname', args.name)
@@ -122,14 +122,14 @@ class Test_parse_args(unittest.TestCase):
         self.check_process_job('parallel_process_job')
 
     def test_parsed_args_is_pickleable(self):
-        args = m.parse_args('parallel_process_job jobname'.split())
+        args = m.Cli().parse_args('parallel_process_job jobname'.split())
         pickle.dumps(args)
 
     def test_process_batch(self):
         # parallel processing is working with pickle - or similar marshalling
         args = TEST_CONNECTION_ARGS_LIST + 'process_batch batch_id'.split()
 
-        parsed_args = m.parse_args(args)
+        parsed_args = m.Cli().parse_args(args)
 
         pickled_args = pickle.dumps(parsed_args)
         unpickled_args = pickle.loads(pickled_args)
@@ -137,6 +137,8 @@ class Test_parse_args(unittest.TestCase):
         self.assertEqual(parsed_args, unpickled_args)
 
 
+# FIXME: remove Test_main, as it is a nonsensically over mocked
+# main_integration's create_job and a process_job test covers these
 class Test_main(unittest.TestCase):
 
     def test_init_db_called(self):
@@ -148,7 +150,7 @@ class Test_main(unittest.TestCase):
 
         m.main(commands, args)
 
-        command_mock.init_db.assert_called_once_with(m.parse_args(args))
+        command_mock.init_db.assert_called_once_with(m.Cli().parse_args(args))
 
     def test_run_called(self):
         command_mock = mock.Mock()
@@ -159,7 +161,7 @@ class Test_main(unittest.TestCase):
 
         m.main(commands, args)
 
-        command_mock.run.assert_called_once_with(m.parse_args(args))
+        command_mock.run.assert_called_once_with(m.Cli().parse_args(args))
 
     def test_shutdown_called(self):
         command_mock = mock.Mock()
@@ -206,14 +208,14 @@ class CommandTestCase(TarrApplicationTestCase):
 
 
 def demo_process_job_args(destdir, jobname):
-    return m.parse_args(
+    return m.Cli().parse_args(
         TEST_CONNECTION_ARGS_LIST
         + 'create_job --application tarr.demo_app.DemoApp --program tarr.demo_app'.split()
         + ['--source', destdir]
         + [jobname])
 
 def process_job_args(jobname):
-    return m.parse_args(
+    return m.Cli().parse_args(
         TEST_CONNECTION_ARGS_LIST
         + ['process_job', jobname])
 
@@ -222,7 +224,7 @@ def statistics_args(jobname, dot=False):
     if dot:
         args.append('--dot')
     args.append(jobname)
-    return m.parse_args(
+    return m.Cli().parse_args(
         TEST_CONNECTION_ARGS_LIST
         + ['statistics']
         + args)
@@ -288,7 +290,7 @@ class Test_JobsCommand(CommandTestCase):
 
         stdout = StringIO()
         with mock.patch('sys.stdout', stdout):
-            jobs_args = m.parse_args(TEST_CONNECTION_ARGS_LIST + ['jobs'])
+            jobs_args = m.Cli().parse_args(TEST_CONNECTION_ARGS_LIST + ['jobs'])
             self.run_command(m.JobsCommand, jobs_args)
 
         output = stdout.getvalue().splitlines()
@@ -501,7 +503,7 @@ class Test_InitCommand(DbTestCase):
         super(Test_InitCommand, self).tearDown()
 
     def test_Job_table_available(self):
-        args = m.parse_args(TEST_CONNECTION_ARGS_LIST + ['init'])
+        args = m.Cli().parse_args(TEST_CONNECTION_ARGS_LIST + ['init'])
         command = m.InitCommand()
         with self.new_session() as session:
             command.session = session
