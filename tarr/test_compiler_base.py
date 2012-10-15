@@ -2,7 +2,7 @@ import unittest
 import tarr.compiler_base as m
 from tarr.compiler_base import (
     Instruction, BranchingInstruction,
-    RETURN, RETURN_TRUE, RETURN_FALSE,
+    RETURN_TRUE, RETURN_FALSE,
     DEF, IF, ELSE, ELIF, ENDIF,
     IF_NOT, ELIF_NOT,
     DuplicateLabelError, UndefinedLabelError, BackwardReferenceError,
@@ -262,34 +262,24 @@ class Test_Program(unittest.TestCase):
         return self.PROGRAM_CLASS(program_spec)
 
     def test_instruction_sequence(self):
-        prog = self.program([Add1, Div2, RETURN])
+        prog = self.program([Add1, Div2, RETURN_TRUE])
         self.assertEqual(2, prog.run(3))
-
-    def test_condition_output1(self):
-        prog = self.program([IsOdd, RETURN])
-        self.assertEqual(3, prog.run(3))
-        self.assertTrue(prog.runner.exit_status)
-
-    def test_condition_output2(self):
-        prog = self.program([IsOdd, RETURN])
-        self.assertEqual(4, prog.run(4))
-        self.assertFalse(prog.runner.exit_status)
 
     def test_duplicate_definition_of_label_is_not_compilable(self):
         with self.assertRaises(DuplicateLabelError):
-            self.program([RETURN, DEF('label'), Noop, RETURN, DEF('label'), Noop])
+            self.program([RETURN_TRUE, DEF('label'), Noop, RETURN_TRUE, DEF('label'), Noop])
 
     def test_incomplete_program_is_not_compilable(self):
         with self.assertRaises(UndefinedLabelError):
-            self.program(['label', RETURN])
+            self.program(['label', RETURN_TRUE])
 
     def test_incomplete_before_label_is_not_compilable(self):
         with self.assertRaises(FallOverOnDefineError):
-            self.program([Noop, DEF('label'), Noop, RETURN])
+            self.program([Noop, DEF('label'), Noop, RETURN_TRUE])
 
     def test_label_definition_within_label_def_is_not_compilable(self):
         with self.assertRaises(FallOverOnDefineError):
-            self.program([RETURN, DEF('label'), DEF('label2'), RETURN])
+            self.program([RETURN_TRUE, DEF('label'), DEF('label2'), RETURN_TRUE])
 
     def test_program_without_closing_return_is_not_compilable(self):
         with self.assertRaises(UnclosedProgramError):
@@ -297,7 +287,7 @@ class Test_Program(unittest.TestCase):
 
     def test_backward_reference_is_not_compilable(self):
         with self.assertRaises(BackwardReferenceError):
-            self.program([RETURN, DEF('label'), Noop, 'label'])
+            self.program([RETURN_TRUE, DEF('label'), Noop, 'label'])
 
     def test_branch_on_yes(self):
         prog = self.program([
@@ -306,12 +296,12 @@ class Test_Program(unittest.TestCase):
             ELSE,
                 'add2',
             ENDIF,
-            RETURN,
+            RETURN_TRUE,
 
             DEF('add2'),
                 Add1,
                 Add1,
-            RETURN
+            RETURN_TRUE
             ])
         self.assertEqual(4, prog.run(3))
         self.assertEqual(6, prog.run(4))
@@ -324,31 +314,31 @@ class Test_Program(unittest.TestCase):
             ELSE,
                 'add1',
             ENDIF,
-            RETURN,
+            RETURN_TRUE,
 
             DEF('add1'),
                 Add1,
-            RETURN
+            RETURN_TRUE
             ])
         self.assertEqual(5, prog.run(4))
         self.assertEqual(5, prog.run(3))
 
     def test_string_as_call_symbol(self):
         prog = self.program([
-            '+1', '+2', RETURN,
+            '+1', '+2', RETURN_TRUE,
 
-            DEF('+2'), '+1', '+1', RETURN,
-            DEF('+1'), Add1, RETURN
+            DEF('+2'), '+1', '+1', RETURN_TRUE,
+            DEF('+1'), Add1, RETURN_TRUE
             ])
         self.assertEqual(3, prog.run(0))
 
     def test_compilation_with_missing_ENDIF_is_not_possible(self):
         with self.assertRaises(MissingEndIfError):
-            self.program([IF (IsOdd), RETURN])
+            self.program([IF (IsOdd), RETURN_TRUE])
 
     def test_compilation_with_multiple_ELSE_is_not_possible(self):
         with self.assertRaises(MultipleElseError):
-            self.program([IF (IsOdd), ELSE, ELSE, ENDIF, RETURN])
+            self.program([IF (IsOdd), ELSE, ELSE, ENDIF, RETURN_TRUE])
 
     def test_IF(self):
         prog = self.program([
@@ -356,7 +346,7 @@ class Test_Program(unittest.TestCase):
                 Add1,
             ENDIF,
             Add1,
-            RETURN])
+            RETURN_TRUE])
 
         self.assertEqual(1, prog.run(0))
         self.assertEqual(3, prog.run(1))
@@ -372,7 +362,7 @@ class Test_Program(unittest.TestCase):
                 ENDIF,
             ENDIF,
             Add('.'),
-            RETURN])
+            RETURN_TRUE])
 
         self.assertEqual('value.', prog.run('value'))
         self.assertEqual('IF_NOT.', prog.run('?'))
@@ -384,7 +374,7 @@ class Test_Program(unittest.TestCase):
                 Add1,
             ENDIF,
             Add1,
-            RETURN])
+            RETURN_TRUE])
 
         self.assertEqual(2, prog.run(0))
         self.assertEqual(2, prog.run(1))
@@ -399,7 +389,7 @@ class Test_Program(unittest.TestCase):
                 Add1,
             ENDIF,
             Add1,
-            RETURN])
+            RETURN_TRUE])
 
         self.assertEqual(3, prog.run(0))
         self.assertEqual(3, prog.run(1))
@@ -417,7 +407,7 @@ class Test_Program(unittest.TestCase):
                 Const('ELSE'),
             ENDIF,
             Add('.'),
-            RETURN])
+            RETURN_TRUE])
 
         self.assertEqual('IF.', prog.run('value'))
         self.assertEqual('ELIF1.', prog.run('variant1'))
@@ -436,7 +426,7 @@ class Test_Program(unittest.TestCase):
                 Const('ELSE'),
             ENDIF,
             Add('.'),
-            RETURN])
+            RETURN_TRUE])
 
         self.assertEqual('IF.', prog.run('value'))
         self.assertEqual('ELIF_NOT.', prog.run('not_variant'))
@@ -452,14 +442,14 @@ class Test_Program(unittest.TestCase):
                 Const('ELSE'),
             ENDIF,
             Add('.'),
-            RETURN])
+            RETURN_TRUE])
 
         self.assertEqual('IF_NOT.', prog.run('unkown'))
         self.assertEqual('ELSE.', prog.run('value'))
 
     def test_compilation_with_ELIF_after_ELSE_is_not_possible(self):
         with self.assertRaises(ElIfAfterElseError):
-            self.program([IF (IsOdd), ELSE, ELIF (IsOdd), ENDIF, RETURN])
+            self.program([IF (IsOdd), ELSE, ELIF (IsOdd), ENDIF, RETURN_TRUE])
 
     def test_embedded_IFs(self):
         prog = self.program([
@@ -474,7 +464,7 @@ class Test_Program(unittest.TestCase):
                 Add1,
             ENDIF,
             Div2,
-            RETURN])
+            RETURN_TRUE])
 
         self.assertEqual(1, prog.run(0))
         self.assertEqual(1, prog.run(1))
@@ -489,7 +479,7 @@ class Test_Program(unittest.TestCase):
             IF ('odd?'),
                 Add1,
             ENDIF,
-            RETURN,
+            RETURN_TRUE,
 
             DEF ('odd?'),
                 IF (IsOdd),
@@ -508,7 +498,7 @@ class Test_Program(unittest.TestCase):
             IF ('odd?'),
                 Add1,
             ENDIF,
-            RETURN,
+            RETURN_TRUE,
 
             DEF ('odd?'),
                 IF (IsOdd),
@@ -524,22 +514,18 @@ class Test_Program(unittest.TestCase):
     # used in the next 2 tests
     complex_prog_spec = [
         IF ('even?'),
-            RETURN,
+            RETURN_TRUE,
         ELSE,
             Add1,
         ENDIF,
-        RETURN,
+        RETURN_TRUE,
 
         DEF ('even?'),
-            IF ('odd?'),
+            IF (IsOdd),
                 RETURN_FALSE,
             ELSE,
                 RETURN_TRUE,
             ENDIF,
-
-        DEF ('odd?'),
-            IsOdd,
-            RETURN,
     ]
 
     def test_macro_return(self):
@@ -561,22 +547,22 @@ class Test_Program(unittest.TestCase):
             self.program(
                 [
                 IF(IsOdd),
-                    RETURN,
+                    RETURN_TRUE,
                 ENDIF,
                 ])
 
     def test_sub_programs(self):
         prog = self.program([
             Add1,
-            m.RETURN,
+            m.RETURN_TRUE,
             m.DEF ('x1'),
-            m.RETURN,
+            m.RETURN_TRUE,
             m.DEF ('x2'),
-            m.RETURN,
+            m.RETURN_TRUE,
             m.DEF ('x3'),
             Add1,
             Add1,
-            m.RETURN,
+            m.RETURN_TRUE,
             ])
 
         sub_programs = iter(prog.sub_programs())
@@ -601,13 +587,13 @@ class Test_Program(unittest.TestCase):
 
     def program_for_visiting_with_all_features(self):
         return self.program([
-            'x', m.RETURN,
+            'x', m.RETURN_TRUE,
 
             m.DEF ('x'),
                 m.IF (IsOdd),
                     Add1,
                 m.ENDIF,
-                m.RETURN
+                m.RETURN_TRUE
             ])
 
     def check_visitor(self, visitor):

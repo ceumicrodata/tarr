@@ -125,7 +125,7 @@ class Test_program_config_hash(unittest.TestCase):
         app.job = mock.Mock()
         app.job.program_config = 'tarr.fixtures.program_for_hash'
 
-        self.assertEqual('9161b0f4303953d1d208d309388c28d0aa11228c', app.program_config_hash())
+        self.assertEqual('48bae2445873f256cd8fa0793674bae315b67adb', app.program_config_hash())
 
 
 class Test_load_program(unittest.TestCase):

@@ -1,7 +1,7 @@
 import unittest
 from tarr.data import Data
 import tarr
-from tarr.compiler import IF, ELSE, ENDIF, RETURN, Program
+from tarr.compiler import IF, ELSE, ENDIF, RETURN_TRUE, Program
 
 
 @tarr.branch
@@ -24,7 +24,7 @@ PROGRAM = [
     ELSE,
         other,
     ENDIF,
-    RETURN
+    RETURN_TRUE
 ]
 
 

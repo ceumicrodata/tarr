@@ -5,7 +5,7 @@ from datetime import datetime
 
 from .compiler_base import (
     Instruction, BranchingInstruction,
-    RETURN, RETURN_TRUE, RETURN_FALSE,
+    RETURN_TRUE, RETURN_FALSE,
     DEF, IF, ELIF, ELSE, ENDIF,
     IF_NOT, ELIF_NOT)
 
@@ -336,7 +336,7 @@ def branch(func):
 __all__ = [
     Program,
     branch, rule,
-    RETURN, RETURN_TRUE, RETURN_FALSE,
+    RETURN_TRUE, RETURN_FALSE,
     DEF, IF, ELIF, ELSE, ENDIF,
     IF_NOT, ELIF_NOT,
 ]

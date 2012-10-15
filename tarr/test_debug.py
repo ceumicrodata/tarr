@@ -2,14 +2,14 @@ import unittest
 import os.path
 import tempdir
 import tarr.debug as m
-from tarr.compiler import Program, RETURN
+from tarr.compiler import Program, RETURN_TRUE
 from tarr.data import Data
 
 
 class Test_WRITE_TO_FILE(unittest.TestCase):
 
     def program(self, tempfile):
-        return Program([m.WRITE_TO_FILE(tempfile), RETURN])
+        return Program([m.WRITE_TO_FILE(tempfile), RETURN_TRUE])
 
     def test_writes_data_as_id_and_payload(self):
         with tempdir.TempDir() as d:

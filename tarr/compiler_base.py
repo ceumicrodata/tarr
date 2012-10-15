@@ -73,8 +73,8 @@ class Return(InstructionBase):
 
     return_value = None
 
-    def __init__(self, return_value=None):
-        self.return_value = return_value
+    def __init__(self, return_value=True):
+        self.return_value = bool(return_value)
 
     def next_instruction(self, exit_status):
         return None
@@ -96,7 +96,6 @@ class Return(InstructionBase):
         visitor.visit_return(self)
 
 
-RETURN = Return()
 RETURN_TRUE = Return(return_value=True)
 RETURN_FALSE = Return(return_value=False)
 

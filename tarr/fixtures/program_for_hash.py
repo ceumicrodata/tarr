@@ -1,5 +1,5 @@
-from tarr.compiler import RETURN
+from tarr.compiler import RETURN_TRUE
 
 TARR_PROGRAM = [
-    RETURN
+    RETURN_TRUE
 ]

@@ -35,7 +35,7 @@ TEST_TO_TEXT_WITHOUT_STATISTICS = (
 '''   0 CALL "su"bprogram"
        # True  -> 1
        # False -> 1
-   1 RETURN
+   1 RETURN True
 END OF MAIN PROGRAM
 
 DEF ("su"bprogram")
@@ -51,7 +51,7 @@ TEST_TO_TEXT_WITH_STATISTICS = (
 '''   0 CALL "su"bprogram"    (*3)
        # True  -> 1   (*2)
        # False -> 1   (*1)
-   1 RETURN   (*3)
+   1 RETURN True   (*3)
 END OF MAIN PROGRAM
 
 DEF ("su"bprogram")
@@ -72,7 +72,7 @@ subgraph "cluster_None" {
     node_0 [label="CALL su\"bprogram"];
     node_0 -> node_1 [label="True"];
     node_0 -> node_1 [label="False"];
-    node_1 [label="RETURN"];
+    node_1 [label="RETURN True"];
 }
 
 subgraph "cluster_su\"bprogram" {
@@ -100,7 +100,7 @@ subgraph "cluster_None" {
     node_0 [label="CALL su\"bprogram"];
     node_0 -> node_1 [label="True: 2"];
     node_0 -> node_1 [label="False: 1"];
-    node_1 [label="RETURN: 3"];
+    node_1 [label="RETURN True: 3"];
 }
 
 subgraph "cluster_su\"bprogram" {
@@ -134,7 +134,7 @@ class Test_Program_visualization(unittest.TestCase):
 
     visualized_program_spec = [
         'su"bprogram', # name contains " to check dot escape
-        m.RETURN,
+        m.RETURN_TRUE,
 
         m.DEF ('su"bprogram'),
             m.IF (odd),
@@ -193,14 +193,14 @@ class Test_Program_statistics(unittest.TestCase):
         RETURN_MAP = {
             True: m.RETURN_TRUE,
             False: m.RETURN_FALSE,
-            None: m.RETURN
+            None: m.RETURN_TRUE
         }
-        prog = m.Program([Noop, RETURN_MAP[condition], Noop, Noop, m.RETURN])
+        prog = m.Program([Noop, RETURN_MAP[condition], Noop, Noop, m.RETURN_TRUE])
         prog.runner.ensure_statistics(1)
         return prog
 
     def test_statistics_created(self):
-        prog = m.Program([Noop, m.RETURN, Noop, Noop, m.RETURN])
+        prog = m.Program([Noop, m.RETURN_TRUE, Noop, Noop, m.RETURN_TRUE])
         prog.run(None)
 
         self.assertEqual(2, len(prog.statistics))
@@ -250,7 +250,7 @@ class Test_Program_statistics(unittest.TestCase):
         self.assertLess(run_time2, run_time3)
 
     def die_prog(self):
-        prog = m.Program([die, m.RETURN])
+        prog = m.Program([die, m.RETURN_TRUE])
         prog.runner.ensure_statistics(1)
         return prog
 
@@ -313,7 +313,7 @@ class Test_decorators(unittest.TestCase):
         self.assertEqual(expected.payload, actual.payload)
 
     def test_rule(self):
-        prog = m.Program([add1, m.RETURN])
+        prog = m.Program([add1, m.RETURN_TRUE])
 
         self.assertEqualData(Data(id, 1), prog.run(Data(id, 0)))
         self.assertEqualData(Data(id, 2), prog.run(Data(id, 1)))
@@ -326,7 +326,7 @@ class Test_decorators(unittest.TestCase):
             m.ELSE,
                 const_even,
             m.ENDIF,
-            m.RETURN])
+            m.RETURN_TRUE])
 
         self.assertEqualData(Data(id, 'even'), prog.run(Data(id, 0)))
         self.assertEqualData(Data(id, 'odd'), prog.run(Data(id, 1)))
@@ -344,7 +344,7 @@ class Test_decorators(unittest.TestCase):
                 const_odd,
                 const_even,
             m.ENDIF,
-            m.RETURN])
+            m.RETURN_TRUE])
 
         self.assertEqualData(Data(id, 'even'), prog.run(Data(id, 0)))
         self.assertEqualData(Data(id, 'odd'), prog.run(Data(id, 1)))

@@ -171,7 +171,7 @@ TEXT_STATISTICS = '''   0 is_processed
    2 is_processed
        # True  -> 3   (*90)
        # False -> 3   (*0)
-   3 RETURN   (*90)
+   3 RETURN True   (*90)
 END OF MAIN PROGRAM
 '''
 
@@ -188,7 +188,7 @@ subgraph "cluster_None" {
     node_2 [label="is_processed"];
     node_2 -> node_3 [label="True: 90"];
     node_2 -> node_3 [label="False: 0"];
-    node_3 [label="RETURN: 90"];
+    node_3 [label="RETURN True: 90"];
 }
 }
 '''

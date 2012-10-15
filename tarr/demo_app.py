@@ -81,7 +81,7 @@ TARR_PROGRAM = [
     is_processed,   # statistics should have failure_count, not success_count
     set_processed,  # statistics should have item_count
     is_processed,   # statistics should have success_count, not failure_count
-    tarr.compiler.RETURN
+    tarr.compiler.RETURN_TRUE
 ]
 
 
