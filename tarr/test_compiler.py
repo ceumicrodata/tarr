@@ -23,6 +23,13 @@ def odd(n):
     return n % 2 == 1
 
 
+@m.branch_rule
+def increase_if_odd(n):
+    if odd(n):
+        return n + 1
+    return m.HAVE_NOT_DONE_IT
+
+
 class WellKnownException(Exception):
     pass
 
@@ -330,6 +337,18 @@ class Test_decorators(unittest.TestCase):
 
         self.assertEqualData(Data(id, 'even'), prog.run(Data(id, 0)))
         self.assertEqualData(Data(id, 'odd'), prog.run(Data(id, 1)))
+
+    def test_rule_branch(self):
+        # program: add 2 to value if odd, else leave it
+        prog = m.Program([
+            m.IF (increase_if_odd),
+                add1,
+            m.ENDIF,
+            m.RETURN_TRUE,
+            ])
+
+        self.assertEqualData(Data(id, 0), prog.run(Data(id, 0)))
+        self.assertEqualData(Data(id, 3), prog.run(Data(id, 1)))
 
     def test_multiple_use_of_instructions(self):
         # program: convert an odd number to string 'odd', an even number to 'even'

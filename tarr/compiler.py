@@ -333,9 +333,44 @@ def branch(func):
     return func
 
 
+HAVE_NOT_DONE_IT = object()
+
+class TarrBranchRuleInstruction(TarrBranchInstruction):
+
+    def run(self, runner, data):
+        output = self.func(data.payload)
+        done_it = output is not HAVE_NOT_DONE_IT
+        runner.set_exit_status(done_it)
+        if done_it:
+            data.payload = output
+        return data
+
+
+def branch_rule(func):
+    '''
+    Decorator, enable function to be used as both a rule and a condition in a Tarr program.
+
+    The intended use is to try to make progress and return with the special value HAVE_NOT_DONE_IT if could not make it, otherwise the new value.
+
+    WARNING: if the input is modified in-place, its value WILL be modified even if returning HAVE_NOT_DONE_IT!
+
+    To use as a condition: return either the input or the special value HAVE_NOT_DONE_IT.
+    To use as a rule: return the modified input data.
+
+    Usage:
+
+    @branch_rule
+    def maybe_rule(data):
+        ...
+        return {data | HAVE_NOT_DONE_IT}
+    '''
+    func.compile = TarrBranchRuleInstruction(func).compile
+    return func
+
+
 __all__ = [
     Program,
-    branch, rule,
+    branch, rule, branch_rule, HAVE_NOT_DONE_IT,
     RETURN_TRUE, RETURN_FALSE,
     DEF, IF, ELIF, ELSE, ENDIF,
     IF_NOT, ELIF_NOT,
