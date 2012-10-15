@@ -50,10 +50,10 @@ def parse_args(args=None):
     p = subparser('process_job', description='Start or continue processing an existing job')
     add_job_name(p)
 
-    p = subparser('sequential_process_job', description='Start or continue processing an existing job one job after another')
+    p = subparser('sequential_process_job', description='Start or continue processing an existing job - batches are processed one after another')
     add_job_name(p)
 
-    p = subparser('parallel_process_job', description='Start or continue processing an existing job batches are processed in parallel')
+    p = subparser('parallel_process_job', description='Start or continue processing an existing job - batches are processed in parallel')
     add_job_name(p)
 
     p = subparser('process_batch', description='Process a single batch')
