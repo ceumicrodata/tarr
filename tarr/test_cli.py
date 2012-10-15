@@ -18,6 +18,70 @@ TEST_CONNECTION_ARGS_LIST = '--ini test.ini --connection connection-tarr-test'.s
 # actually this is the trivial way for testing parallel processing, but would also give more confidence for the command line module
 
 
+class CommandWithMandatoryArg(m.Command):
+
+    def add_arguments(self, parser):
+        parser.add_argument('--arg', type=int, help='an argument')
+
+
+class Cli2(m.Cli):
+
+    description = 'desc2'
+    prog = 'prog2'
+
+    # defaults = dict(application='x.command')
+
+    def commands(self):
+        return [
+            ('xcommand', m.Command, 'a command'),
+            ('witharg', CommandWithMandatoryArg, 'a command'),
+        ]
+
+
+
+class Test_Cli(unittest.TestCase):
+
+    def test_description1(self):
+        cli = m.Cli()
+        self.assertIsNotNone(cli.parser.description)
+
+    def test_description2(self):
+        cli = Cli2()
+        self.assertEqual('desc2', cli.parser.description)
+
+    def test_prog(self):
+        cli = m.Cli()
+        self.assertIsNotNone(cli.parser.prog)
+
+    def test_prog2(self):
+        cli = Cli2()
+        self.assertEqual('prog2', cli.parser.prog)
+
+    def test_subparsers(self):
+        cli = m.Cli()
+        help = cli.parser.format_help()
+        self.assertIn('jobs', help)
+        self.assertIn('create_job', help)
+        self.assertIn('delete_job', help)
+
+    def test_subparsers2(self):
+        cli = Cli2()
+        help = cli.parser.format_help()
+        self.assertIn('xcommand', help)
+
+    def test_parsed_command(self):
+        cli = Cli2()
+        self.assertEqual('xcommand', cli.parser.parse_args(['xcommand']).command)
+
+    def test_parse_args(self):
+        cli = Cli2()
+        self.assertEqual(3, cli.parser.parse_args('witharg --arg=3'.split()).arg)
+
+    @unittest.skip('will not be implemented - it is individual commands that can decide on it')
+    def test_parse_args_with_defaults(self):
+        pass
+
+
 class Test_parse_args(unittest.TestCase):
 
     def test_create_job(self):

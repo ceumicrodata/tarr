@@ -16,61 +16,13 @@ def add_connection_options_to(parser):
         help='Section name in config file defining the database connection (%(default)s)')
 
 
-def parse_args(args=None):
-    parser = argparse.ArgumentParser(
-        description='TARR Command line tool',
-        prog='python -m tarr')
-
-    add_connection_options_to(parser)
-
-    subparsers = parser.add_subparsers()
-    def subparser(name, description=None):
-        p = subparsers.add_parser(name, description=description)
-        p.set_defaults(command=name)
-        return p
-
-    def add_job_name(parser):
-        parser.add_argument('name', help='job name')
-
-    subparser('jobs', description='List existing jobs')
-
-    subparser('init', description='Create initial TARR DB Schema (only if not already done)')
-
-    p = subparser('create_job', description='Create a new job')
-    add_job_name(p)
-    p.add_argument('--application', help='Application class reference - knows how to load and save data')
-    p.add_argument('--program', help='python module having a TARR_PROGRAM')
-    p.add_argument('--source', help='data to work on - application specific!')
-    p.add_argument('--partitioning_name', default=None, help='partitioning used by batch creation (%(default)s)')
-    p.add_argument('--description', default=None, help='words differentiating this job from others on the same data')
-
-    p = subparser('delete_job', description='Delete an existing job')
-    add_job_name(p)
-
-    p = subparser('process_job', description='Start or continue processing an existing job')
-    add_job_name(p)
-
-    p = subparser('sequential_process_job', description='Start or continue processing an existing job - batches are processed one after another')
-    add_job_name(p)
-
-    p = subparser('parallel_process_job', description='Start or continue processing an existing job - batches are processed in parallel')
-    add_job_name(p)
-
-    p = subparser('process_batch', description='Process a single batch')
-    p.add_argument('batch_id', help='batch identifier')
-
-    p = subparser('statistics', description='Print job statistics per processor')
-    add_job_name(p)
-    p.add_argument('--dot', dest='output_format', action='store_const', const='dot', help='''output in GraphViz's DOT language''')
-    p.add_argument('--text', dest='output_format', default='text', action='store_const', const='text', help='''output in text (default)''')
-
-    return parser.parse_args(args)
-
-
 class Command(object):
 
     application = None
     session = None
+
+    def add_arguments(self, parser):
+        pass
 
     def get_application(self, application):
         app_class = dottedname_resolve(application)
@@ -102,13 +54,30 @@ class Command(object):
         pass
 
 
+class JobCommandBase(Command):
+
+    def add_job_name_argument(self, parser):
+        parser.add_argument('name', help='job name')
+
+    def add_arguments(self, parser):
+        self.add_job_name_argument(parser)
+
+
 class InitCommand(Command):
 
     def run(self, args):
         model.init_meta_with_schema(model.meta)
 
 
-class CreateJobCommand(Command):
+class CreateJobCommand(JobCommandBase):
+
+    def add_arguments(self, parser):
+        self.add_job_name_argument(parser)
+        parser.add_argument('--application', help='Application class reference - knows how to load and save data')
+        parser.add_argument('--program', help='python module having a TARR_PROGRAM')
+        parser.add_argument('--source', help='data to work on - application specific!')
+        parser.add_argument('--partitioning_name', default=None, help='partitioning used by batch creation (%(default)s)')
+        parser.add_argument('--description', default=None, help='words differentiating this job from others on the same data')
 
     def run(self, args):
         self.get_application(args.application)
@@ -122,7 +91,7 @@ class CreateJobCommand(Command):
             description=args.description)
 
 
-class DeleteJobCommand(Command):
+class DeleteJobCommand(JobCommandBase):
 
     def run(self, args):
         self.get_application_from_jobname(args.name)
@@ -130,7 +99,7 @@ class DeleteJobCommand(Command):
         self.application.delete_job()
 
 
-class ProcessJobCommand(Command):
+class ProcessJobCommand(JobCommandBase):
 
     def run(self, args):
         self.get_application_from_jobname(args.name)
@@ -139,7 +108,12 @@ class ProcessJobCommand(Command):
         self.application.process_job()
 
 
-class StatisticsCommand(Command):
+class StatisticsCommand(JobCommandBase):
+
+    def add_arguments(self, parser):
+        self.add_job_name_argument(parser)
+        parser.add_argument('--dot', dest='output_format', action='store_const', const='dot', help='''output in GraphViz's DOT language''')
+        parser.add_argument('--text', dest='output_format', default='text', action='store_const', const='text', help='''output in text (default)''')
 
     def run(self, args):
         self.get_application_from_jobname(args.name)
@@ -165,6 +139,9 @@ class JobsCommand(Command):
 
 class ProcessBatchCommand(Command):
 
+    def add_arguments(self, parser):
+        parser.add_argument('batch_id', help='batch identifier')
+
     def process_batch(self, batch_id):
         self.get_application_from_batchid(batch_id)
 
@@ -179,7 +156,7 @@ class ProcessBatchCommand(Command):
         self.process_batch(args.batch_id)
 
 
-class ParallelProcessJobCommand(Command):
+class ParallelProcessJobCommand(JobCommandBase):
 
     def run(self, args):
         # FIXME: ParallelProcessJobCommand is untested
@@ -228,6 +205,43 @@ COMMANDS = dict(
     process_batch=ProcessBatchCommand,
     statistics=StatisticsCommand,
     jobs=JobsCommand)
+
+
+class Cli(object):
+
+    description = 'TARR Command line tool'
+    prog = 'python -m tarr'
+
+    def __init__(self):
+        self.parser = argparse.ArgumentParser(prog=self.prog, description=self.description)
+
+        add_connection_options_to(self.parser)
+
+        subparsers = self.parser.add_subparsers()
+
+        for (subcmd, command, description) in self.commands():
+            subparser = subparsers.add_parser(subcmd, description=description)
+            subparser.set_defaults(command=subcmd)
+            command().add_arguments(subparser)
+
+    def commands(self):
+        return [
+            ('init', InitCommand, 'Create initial TARR DB Schema (only if not already done)'),
+
+            ('jobs', JobsCommand, 'List existing jobs'),
+            ('create_job', CreateJobCommand, 'Create a new job'),
+            ('delete_job', DeleteJobCommand, 'Delete an existing job'),
+            ('process_job', ParallelProcessJobCommand, 'Start or continue processing an existing job'),
+            ('sequential_process_job', ProcessJobCommand, 'Start or continue processing an existing job - batches are processed one after another'),
+            ('parallel_process_job', ParallelProcessJobCommand, 'Start or continue processing an existing job - batches are processed in parallel'),
+
+            ('process_batch', ProcessBatchCommand, 'Process a single batch'),
+            ('statistics', StatisticsCommand, 'Print job statistics per processor'),
+            ]
+
+
+def parse_args(args=None):
+    return Cli().parser.parse_args(args)
 
 
 def main(commands=None, args=None):
