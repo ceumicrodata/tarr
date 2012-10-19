@@ -196,17 +196,6 @@ def process_batch_parallel(parallel_arg):
         raise
 
 
-COMMANDS = dict(
-    create_job=CreateJobCommand,
-    delete_job=DeleteJobCommand,
-    process_job=ParallelProcessJobCommand,
-    sequential_process_job=ProcessJobCommand,
-    parallel_process_job=ParallelProcessJobCommand,
-    process_batch=ProcessBatchCommand,
-    statistics=StatisticsCommand,
-    jobs=JobsCommand)
-
-
 class Cli(object):
 
     description = 'TARR Command line tool'
@@ -219,10 +208,10 @@ class Cli(object):
 
         subparsers = self.parser.add_subparsers()
 
-        for (subcmd, command, description) in self.commands():
+        for (subcmd, command_class, description) in self.commands():
             subparser = subparsers.add_parser(subcmd, description=description)
             subparser.set_defaults(command=subcmd)
-            command().add_arguments(subparser)
+            command_class().add_arguments(subparser)
 
     def commands(self):
         return [
@@ -239,15 +228,19 @@ class Cli(object):
             ('statistics', StatisticsCommand, 'Print job statistics per processor'),
             ]
 
+    def get_command(self, command_name):
+        for (subcmd, command_class, description) in self.commands():
+            if subcmd == command_name:
+                return command_class()
+
     def parse_args(self, args=None):
         return self.parser.parse_args(args)
 
     def main(self, args=None):
         parsed_args = self.parse_args(args)
-        commands = COMMANDS
-        command_class = commands[parsed_args.command]
 
-        command = command_class()
+        command = self.get_command(parsed_args.command)
+
         command.init_db(parsed_args)
         try:
             command.run(parsed_args)
