@@ -21,7 +21,7 @@ class Command(object):
     application = None
     session = None
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser, defaults):
         pass
 
     def get_application(self, application):
@@ -59,7 +59,7 @@ class JobCommandBase(Command):
     def add_job_name_argument(self, parser):
         parser.add_argument('name', help='job name')
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser, defaults):
         self.add_job_name_argument(parser)
 
 
@@ -71,7 +71,7 @@ class InitCommand(Command):
 
 class CreateJobCommand(JobCommandBase):
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser, defaults):
         self.add_job_name_argument(parser)
         parser.add_argument('--application', help='Application class reference - knows how to load and save data')
         parser.add_argument('--program', help='python module having a TARR_PROGRAM')
@@ -110,7 +110,7 @@ class ProcessJobCommand(JobCommandBase):
 
 class StatisticsCommand(JobCommandBase):
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser, defaults):
         self.add_job_name_argument(parser)
         parser.add_argument('--dot', dest='output_format', action='store_const', const='dot', help='''output in GraphViz's DOT language''')
         parser.add_argument('--text', dest='output_format', default='text', action='store_const', const='text', help='''output in text (default)''')
@@ -139,7 +139,7 @@ class JobsCommand(Command):
 
 class ProcessBatchCommand(Command):
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser, defaults):
         parser.add_argument('batch_id', help='batch identifier')
 
     def process_batch(self, batch_id):
@@ -208,12 +208,15 @@ class Cli(object):
 
         subparsers = self.parser.add_subparsers()
 
-        for (subcmd, command_class, description) in self.commands():
+        for (subcmd, command_class, description) in self.get_commands():
             subparser = subparsers.add_parser(subcmd, description=description)
             subparser.set_defaults(command=subcmd)
-            command_class().add_arguments(subparser)
+            command_class().add_arguments(subparser, self.get_defaults())
 
-    def commands(self):
+    def get_defaults(self):
+        return dict()
+
+    def get_commands(self):
         return [
             ('init', InitCommand, 'Create initial TARR DB Schema (only if not already done)'),
 
@@ -229,7 +232,7 @@ class Cli(object):
             ]
 
     def get_command(self, command_name):
-        for (subcmd, command_class, description) in self.commands():
+        for (subcmd, command_class, description) in self.get_commands():
             if subcmd == command_name:
                 return command_class()
 

@@ -18,10 +18,10 @@ TEST_CONNECTION_ARGS_LIST = '--ini test.ini --connection connection-tarr-test'.s
 # actually this is the trivial way for testing parallel processing, but would also give more confidence for the command line module
 
 
-class CommandWithMandatoryArg(m.Command):
+class CommandWithArg(m.Command):
 
-    def add_arguments(self, parser):
-        parser.add_argument('--arg', type=int, help='an argument')
+    def add_arguments(self, parser, defaults):
+        parser.add_argument('--arg', type=int, default=defaults.get('arg'), help='an argument')
 
 
 class Cli2(m.Cli):
@@ -29,14 +29,22 @@ class Cli2(m.Cli):
     description = 'desc2'
     prog = 'prog2'
 
-    # defaults = dict(application='x.command')
-
-    def commands(self):
+    def get_commands(self):
         return [
             ('xcommand', m.Command, 'a command'),
-            ('witharg', CommandWithMandatoryArg, 'a command'),
+            ('witharg', CommandWithArg, 'a command'),
         ]
 
+
+class Cli_Default(m.Cli):
+
+    def get_defaults(self):
+        return dict(arg=2)
+
+    def get_commands(self):
+        return [
+            ('witharg', CommandWithArg, 'a command'),
+        ]
 
 
 class Test_Cli(unittest.TestCase):
@@ -76,6 +84,10 @@ class Test_Cli(unittest.TestCase):
     def test_parse_args(self):
         cli = Cli2()
         self.assertEqual(3, cli.parser.parse_args('witharg --arg=3'.split()).arg)
+
+    def test_parse_args_defaults(self):
+        self.assertEqual(2, Cli_Default().parser.parse_args(['witharg']).arg)
+        self.assertEqual(None, Cli2().parser.parse_args(['witharg']).arg)
 
     @unittest.skip('will not be implemented - it is individual commands that can decide on it')
     def test_parse_args_with_defaults(self):
