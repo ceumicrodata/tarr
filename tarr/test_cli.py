@@ -304,6 +304,37 @@ class Test_CreateJobCommand(unittest.TestCase):
         mock_get_application(command, application_mock)
         return command
 
+    def test_parser(self):
+        parser = m.argparse.ArgumentParser()
+        self.get_command().add_arguments(parser, dict())
+
+        args = parser.parse_args(
+            (
+                'jobname --app=location.clean.Application --program=program-config --source=complex:rovat_13:pm'
+                ' --partitioning_name=every_200'
+            ).split()
+            + ['--description=a description'])
+
+        self.assertEqual('jobname', args.name)
+        self.assertEqual('location.clean.Application', args.application)
+        self.assertEqual('program-config', args.program)
+        self.assertEqual('complex:rovat_13:pm', args.source)
+        self.assertEqual('every_200', args.partitioning_name)
+        self.assertEqual('a description', args.description)
+
+    def test_parser_defaults(self):
+        parser = m.argparse.ArgumentParser()
+        self.get_command().add_arguments(parser, dict(application='tarr.demo_app.DemoApp', program='tarr.demo_app', partitioning_name='dmeo'))
+
+        args = parser.parse_args('jobname2 --source=complex:rovat_13:pm'.split())
+
+        self.assertEqual('jobname2', args.name)
+        self.assertEqual('tarr.demo_app.DemoApp', args.application)
+        self.assertEqual('tarr.demo_app', args.program)
+        self.assertEqual('complex:rovat_13:pm', args.source)
+        self.assertEqual('dmeo', args.partitioning_name)
+        self.assertEqual(None, args.description)
+
     def test_application_loading(self):
         command = self.get_command()
 

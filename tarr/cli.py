@@ -73,11 +73,19 @@ class CreateJobCommand(JobCommandBase):
 
     def add_arguments(self, parser, defaults):
         self.add_job_name_argument(parser)
-        parser.add_argument('--application', help='Application class reference - knows how to load and save data')
-        parser.add_argument('--program', help='python module having a TARR_PROGRAM')
-        parser.add_argument('--source', help='data to work on - application specific!')
-        parser.add_argument('--partitioning_name', default=None, help='partitioning used by batch creation (%(default)s)')
-        parser.add_argument('--description', default=None, help='words differentiating this job from others on the same data')
+        parser.add_argument('--application',
+            default=defaults.get('application'),
+            help='Application class reference - knows how to load and save data (%(default)s)')
+        parser.add_argument('--program',
+            default=defaults.get('program'),
+            help='python module having a TARR_PROGRAM (%(default)s)')
+        parser.add_argument('--source',
+            help='data to work on - application specific!')
+        parser.add_argument('--partitioning_name',
+            default=defaults.get('partitioning_name'),
+            help='partitioning used by batch creation (%(default)s)')
+        parser.add_argument('--description',
+            default=None, help='words differentiating this job from others on the same data')
 
     def run(self, args):
         self.get_application(args.application)
@@ -202,16 +210,21 @@ class Cli(object):
     prog = 'python -m tarr'
 
     def __init__(self):
-        self.parser = argparse.ArgumentParser(prog=self.prog, description=self.description)
+        self.parser = self.make_parser(self.prog, self.description, self.get_commands(), self.get_defaults())
 
-        add_connection_options_to(self.parser)
+    def make_parser(self, prog, description, commands, defaults):
+        parser = argparse.ArgumentParser(prog=prog, description=description)
 
-        subparsers = self.parser.add_subparsers()
+        add_connection_options_to(parser)
 
-        for (subcmd, command_class, description) in self.get_commands():
+        subparsers = parser.add_subparsers()
+
+        for (subcmd, command_class, description) in commands:
             subparser = subparsers.add_parser(subcmd, description=description)
             subparser.set_defaults(command=subcmd)
-            command_class().add_arguments(subparser, self.get_defaults())
+            command_class().add_arguments(subparser, defaults)
+
+        return parser
 
     def get_defaults(self):
         return dict()
