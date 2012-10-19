@@ -137,45 +137,7 @@ class Test_Cli_parse_args(unittest.TestCase):
         self.assertEqual(parsed_args, unpickled_args)
 
 
-# FIXME: remove Test_main, as it is a nonsensically over mocked
-# main_integration's create_job and a process_job test covers these
-class Test_main(unittest.TestCase):
-
-    def test_init_db_called(self):
-        command_mock = mock.Mock()
-        command_mock.init_db = mock.Mock(m.Command.init_db)
-        command_class_mock = mock.Mock(m.Command, return_value=command_mock)
-        commands = dict(process_job=command_class_mock)
-        args = 'process_job first'.split()
-
-        m.main(commands, args)
-
-        command_mock.init_db.assert_called_once_with(m.Cli().parse_args(args))
-
-    def test_run_called(self):
-        command_mock = mock.Mock()
-        command_mock.run = mock.Mock(m.Command.run)
-        command_class_mock = mock.Mock(m.Command, return_value=command_mock)
-        commands = dict(process_job=command_class_mock)
-        args = 'process_job first'.split()
-
-        m.main(commands, args)
-
-        command_mock.run.assert_called_once_with(m.Cli().parse_args(args))
-
-    def test_shutdown_called(self):
-        command_mock = mock.Mock()
-        command_mock.shutdown = mock.Mock(m.Command.shutdown)
-        command_class_mock = mock.Mock(m.Command, return_value=command_mock)
-        commands = dict(process_job=command_class_mock)
-        args = 'process_job first'.split()
-
-        m.main(commands, args)
-
-        command_mock.shutdown.assert_called_once_with()
-
-
-class Test_main_integration(DbTestCase):
+class Test_Cli_main_integration(DbTestCase):
 
     def test_create_job(self):
         # setup schema in test database
@@ -190,7 +152,7 @@ class Test_main_integration(DbTestCase):
                 ' --program=tarr.fixtures.program'
                 ' --source=complex:rovat_13:pm').split())
 
-        m.main(args=args_list)
+        m.Cli().main(args=args_list)
 
         with self.new_session() as session:
             job, = session.query(tarr.model.Job).all()

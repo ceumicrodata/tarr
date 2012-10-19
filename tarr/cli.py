@@ -242,18 +242,21 @@ class Cli(object):
     def parse_args(self, args=None):
         return self.parser.parse_args(args)
 
+    def main(self, args=None):
+        parsed_args = self.parse_args(args)
+        commands = COMMANDS
+        command_class = commands[parsed_args.command]
 
-def main(commands=None, args=None):
-    parsed_args = Cli().parse_args(args)
-    commands = commands or COMMANDS
-    command_class = commands[parsed_args.command]
+        command = command_class()
+        command.init_db(parsed_args)
+        try:
+            command.run(parsed_args)
+        finally:
+            command.shutdown()
 
-    command = command_class()
-    command.init_db(parsed_args)
-    try:
-        command.run(parsed_args)
-    finally:
-        command.shutdown()
+
+def main():
+    Cli().main()
 
 
 if __name__ == '__main__':
