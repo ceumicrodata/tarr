@@ -206,11 +206,11 @@ def process_batch_parallel(parallel_arg):
 
 class Cli(object):
 
-    description = 'TARR Command line tool'
-    prog = 'python -m tarr'
-
-    def __init__(self):
-        self.parser = self.make_parser(self.prog, self.description, self.get_commands(), self.get_defaults())
+    def __init__(self, prog='python -m tarr', description='TARR Command line tool', defaults=None):
+        self.prog = prog
+        self.description = description
+        self.defaults = defaults or dict()
+        self.parser = self.make_parser(self.prog, self.description, self.get_commands(), self.defaults)
 
     def make_parser(self, prog, description, commands, defaults):
         parser = argparse.ArgumentParser(prog=prog, description=description)
@@ -225,9 +225,6 @@ class Cli(object):
             command_class().add_arguments(subparser, defaults)
 
         return parser
-
-    def get_defaults(self):
-        return dict()
 
     def get_commands(self):
         return [

@@ -26,23 +26,9 @@ class CommandWithArg(m.Command):
 
 class Cli2(m.Cli):
 
-    description = 'desc2'
-    prog = 'prog2'
-
     def get_commands(self):
         return [
             ('xcommand', m.Command, 'a command'),
-            ('witharg', CommandWithArg, 'a command'),
-        ]
-
-
-class Cli_Default(m.Cli):
-
-    def get_defaults(self):
-        return dict(arg=2)
-
-    def get_commands(self):
-        return [
             ('witharg', CommandWithArg, 'a command'),
         ]
 
@@ -54,7 +40,7 @@ class Test_Cli(unittest.TestCase):
         self.assertIsNotNone(cli.parser.description)
 
     def test_description2(self):
-        cli = Cli2()
+        cli = m.Cli(description='desc2')
         self.assertEqual('desc2', cli.parser.description)
 
     def test_prog(self):
@@ -62,7 +48,7 @@ class Test_Cli(unittest.TestCase):
         self.assertIsNotNone(cli.parser.prog)
 
     def test_prog2(self):
-        cli = Cli2()
+        cli = m.Cli(prog='prog2')
         self.assertEqual('prog2', cli.parser.prog)
 
     def test_subparsers(self):
@@ -86,7 +72,7 @@ class Test_Cli(unittest.TestCase):
         self.assertEqual(3, cli.parser.parse_args('witharg --arg=3'.split()).arg)
 
     def test_parse_args_defaults(self):
-        self.assertEqual(2, Cli_Default().parser.parse_args(['witharg']).arg)
+        self.assertEqual(2, Cli2(defaults=dict(arg=2)).parser.parse_args(['witharg']).arg)
         self.assertEqual(None, Cli2().parser.parse_args(['witharg']).arg)
 
     @unittest.skip('will not be implemented - it is individual commands that can decide on it')
