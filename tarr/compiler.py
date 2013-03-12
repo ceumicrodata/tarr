@@ -3,7 +3,7 @@ from tarr import model
 from datetime import datetime
 
 
-from .compiler_base import (
+from tarr.compiler_base import (
     Instruction, BranchingInstruction,
     RETURN_TRUE, RETURN_FALSE,
     DEF, IF, ELIF, ELSE, ENDIF,
