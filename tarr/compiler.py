@@ -1,6 +1,5 @@
 from tarr import compiler_base
-from tarr import model
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 from tarr.compiler_base import (
@@ -8,6 +7,33 @@ from tarr.compiler_base import (
     RETURN_TRUE, RETURN_FALSE,
     DEF, IF, ELIF, ELSE, ENDIF,
     IF_NOT, ELIF_NOT)
+
+
+class InstructionStatistic(object):
+
+    index = int
+    item_count = int
+    success_count = int
+    failure_count = int
+    run_time = timedelta
+
+    def init(self, index):
+        self.index = index
+        self.item_count = 0
+        self.success_count = 0
+        self.failure_count = 0
+        self.run_time = timedelta()
+
+    @property
+    def had_exception(self):
+        return self.item_count > self.success_count + self.failure_count
+
+    def merge(self, from_stat):
+        assert self.node_name == from_stat.node_name
+        self.item_count += from_stat.item_count
+        self.success_count += from_stat.success_count
+        self.failure_count += from_stat.failure_count
+        self.run_time += from_stat.run_time
 
 
 class StatisticsCollectorRunner(compiler_base.Runner):
@@ -38,7 +64,7 @@ class StatisticsCollectorRunner(compiler_base.Runner):
 
     def ensure_statistics(self, index):
         while index >= len(self.statistics):
-            stat = model.NodeStatistic()
+            stat = InstructionStatistic()
             stat.init(len(self.statistics))
             self.statistics.append(stat)
 
