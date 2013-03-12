@@ -1,7 +1,7 @@
 import unittest
 import tarr.compiler as m
 from tarr.data import Data
-import tarr.test_compiler_base
+import tarr.tests.test_compiler_base
 
 
 Noop = m.Instruction()
@@ -127,7 +127,7 @@ subgraph "cluster_su\"bprogram" {
 }''')
 
 
-class Test_Program(tarr.test_compiler_base.Test_Program):
+class Test_Program(tarr.tests.test_compiler_base.Test_Program):
 
     # verify, that the functionality of the parent is intact - Liskov's substitution principle
 
