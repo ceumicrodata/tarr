@@ -372,6 +372,7 @@ class TarrBranchRuleInstruction(TarrBranchInstruction):
         return data
 
 
+# FIXME: rename to branch_if_not_done
 def branch_rule(func):
     '''
     Decorator, enable function to be used as both a rule and a condition in a Tarr program.
