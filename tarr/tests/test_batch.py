@@ -2,32 +2,11 @@ import unittest
 import mock
 
 import tarr.batch as m
-from tarr.language import RETURN_TRUE
-import tarr
-from tarr.data import Data
-
-
-class NoTransformBatch(m.Batch):
-
-    def get_tarr_transform(self):
-        return [RETURN_TRUE]
-
-
-@tarr.rule
-def duplicate(data):
-    return (data, data)
-
-
-class DuplicateInputBatch(m.Batch):
-
-    def get_tarr_transform(self):
-        return [
-            duplicate,
-            RETURN_TRUE
-        ]
 
 
 class TestBatch_process(unittest.TestCase):
+
+    BATCH_CLASS = m.Batch
 
     def setUp(self):
         # get_reader() & get_writer() is mocked out
@@ -35,12 +14,12 @@ class TestBatch_process(unittest.TestCase):
         # self.reader will return self.data1, self.data2, self.data3
         # self.written will hold the data written to self.writer
 
-        self.batch = NoTransformBatch()
+        self.batch = self.BATCH_CLASS()
         self.batch.get_reader = mock.Mock(spec=self.batch.get_reader)
         self.reader = mock.MagicMock(spec=m.Reader(u''))
-        self.data1 = Data(1, mock.sentinel.a)
-        self.data2 = Data(2, mock.sentinel.b)
-        self.data3 = Data(3, mock.sentinel.c)
+        self.data1 = mock.sentinel.a
+        self.data2 = mock.sentinel.b
+        self.data3 = mock.sentinel.c
         data = [self.data1, self.data2, self.data3]
         self.reader.__iter__.return_value = iter(data)
         self.batch.get_reader.return_value = self.reader
@@ -83,24 +62,33 @@ class TestBatch_process(unittest.TestCase):
         self.writer.close.assert_called_once_with()
 
     def test_data_written_is_transformed_by_program(self):
-        batch = DuplicateInputBatch()
-        batch.get_reader = self.batch.get_reader
-        batch.get_writer = self.batch.get_writer
+        def duplicate(x):
+            return (x, x)
 
-        batch.process(u'input', u'output')
+        self.batch.transform = mock.Mock(
+            self.batch.transform, side_effect=duplicate)
+        self.batch.process(u'input', u'output')
 
         self.assertEqual(3, len(self.written))
-        self.assertEqual(
+        self.assertEqual([
             (mock.sentinel.a, mock.sentinel.a),
-            self.written[0].payload)
+            (mock.sentinel.b, mock.sentinel.b),
+            (mock.sentinel.c, mock.sentinel.c)],
+            self.written)
 
-    def test_exception_in_transform_is_handled(self):
-        self.batch.transform = mock.Mock(spec=self.batch.transform)
-        self.batch.transform.run = mock.Mock(side_effect=[Exception])
+
+class TestTarrBatch_process(TestBatch_process):
+
+    BATCH_CLASS = m.TarrBatch
+
+    def test_exception_in_tarr_transform_is_handled(self):
+        self.batch.transformation = mock.Mock(spec=self.batch.transformation)
+        self.batch.transformation.run = mock.Mock(side_effect=[Exception])
 
         self.batch.process(u'input', u'output')
 
-        self.assertEqual(3, self.batch.transform.run.call_count)
+        self.assertEqual(
+            3, self.batch.transformation.run.call_count)
         self.assertEqual(
             [self.data1, self.data2, self.data3],
             self.written)

@@ -98,7 +98,7 @@ PROGRAM = [
 ]
 
 
-class Batch(tarr.batch.Batch):
+class Batch(tarr.batch.TarrBatch):
 
     def get_reader(self, filename):
         return Reader(filename)

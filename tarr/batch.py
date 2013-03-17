@@ -1,4 +1,5 @@
 from tarr.compiler import Program
+from tarr.language import RETURN_TRUE
 import contextlib
 
 
@@ -36,15 +37,9 @@ class Batch(object):
     '''Abstract class describing a file transformation
 
     - how to read input data (get_reader)
-    - how to process data (get_program)
+    - how to process data (transform)
     - how to write output data (get_writer)
     '''
-
-    def __init__(self):
-        self.transform = Program(self.get_tarr_transform())
-
-    def get_tarr_transform(self):
-        raise NotImplementedError
 
     def get_reader(self, filename):
         return Reader(filename)
@@ -52,16 +47,38 @@ class Batch(object):
     def get_writer(self, filename):
         return Writer(filename)
 
+    def transform(self, data):
+        return data
+
     def process(self, input_filename, output_filename):
         closing = contextlib.closing
         with closing(self.get_reader(input_filename)) as reader:
             with closing(self.get_writer(output_filename)) as writer:
                 for data in iter(reader):
-                    try:
-                        transformed_data = self.transform.run(data)
-                    except Exception:
-                        transformed_data = data
-                    writer.write(transformed_data)
+                    writer.write(self.transform(data))
+
+
+class TarrBatch(Batch):
+    '''Abstract class describing a file transformation using
+    a TARR transformation
+
+    - how to read input data (get_reader)
+    - how to process data (get_tarr_transform)
+    - how to write output data (get_writer)
+    '''
+
+    def __init__(self):
+        self.transformation = Program(self.get_tarr_transform())
+
+    def get_tarr_transform(self):
+        # minimal TARR program - do nothing
+        return [RETURN_TRUE]
+
+    def transform(self, data):
+        try:
+            return self.transformation.run(data)
+        except Exception:
+            return data
 
 
 def main(batch_class, arguments):
