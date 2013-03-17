@@ -98,7 +98,7 @@ PROGRAM = [
 ]
 
 
-class Batch(tarr.batch.TarrBatch):
+class BatchTransform(tarr.batch.TarrBatchTransform):
 
     def get_reader(self, filename):
         return Reader(filename)
@@ -112,4 +112,4 @@ class Batch(tarr.batch.TarrBatch):
 
 if __name__ == '__main__':
     import sys
-    tarr.batch.main(Batch, sys.argv[1:])
+    tarr.batch.main(BatchTransform, sys.argv[1:])

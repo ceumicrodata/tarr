@@ -4,9 +4,9 @@ import mock
 import tarr.batch as m
 
 
-class TestBatch_process(unittest.TestCase):
+class TestBatchTransform_process(unittest.TestCase):
 
-    BATCH_CLASS = m.Batch
+    BATCH_CLASS = m.BatchTransform
 
     def setUp(self):
         # get_reader() & get_writer() is mocked out
@@ -77,9 +77,9 @@ class TestBatch_process(unittest.TestCase):
             self.written)
 
 
-class TestTarrBatch_process(TestBatch_process):
+class TestTarrBatchTransform_process(TestBatchTransform_process):
 
-    BATCH_CLASS = m.TarrBatch
+    BATCH_CLASS = m.TarrBatchTransform
 
     def test_exception_in_tarr_transform_is_handled(self):
         self.batch.transformation = mock.Mock(spec=self.batch.transformation)
@@ -92,3 +92,9 @@ class TestTarrBatch_process(TestBatch_process):
         self.assertEqual(
             [self.data1, self.data2, self.data3],
             self.written)
+
+
+# TODO: test main - also the parallel version
+# plan:
+# 1. use @in_temp_dir
+# 2. use a special BatchTransform class the writes its parameters into file

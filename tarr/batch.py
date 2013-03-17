@@ -33,7 +33,7 @@ class Writer(object):
 # or class.
 # Users also need to provide custom data readers and writers.
 
-class Batch(object):
+class BatchTransform(object):
     '''Abstract class describing a file transformation
 
     - how to read input data (get_reader)
@@ -58,7 +58,7 @@ class Batch(object):
                     writer.write(self.transform(data))
 
 
-class TarrBatch(Batch):
+class TarrBatchTransform(BatchTransform):
     '''Abstract class describing a file transformation using
     a TARR transformation
 
