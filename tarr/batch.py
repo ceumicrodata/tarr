@@ -1,6 +1,16 @@
 from tarr.compiler import Program
 from tarr.language import RETURN_TRUE
 import contextlib
+import os
+import multiprocessing
+import itertools
+
+
+# TODO:
+# - test main
+# - logging of [transform] exceptions
+# - convert direct file operations into external operations
+# - consider using pyfileseq (show stopper: pyfileseq has no tests (1.0.1))
 
 
 class Reader(object):
@@ -81,6 +91,54 @@ class TarrBatchTransform(BatchTransform):
             return data
 
 
+
+def transform_batch(tio):
+    # multiprocessing.Pool.map supports one iterable argument
+    # so we have to pack and unpack them into/from a tuple
+    transformer_class, input, output = tio
+    transformer_class().process(input, output)
+
+
+# file sequence discovery - should match that of csvtools
+# consider using pyfileseq for input sequence discovery
+# and output sequence generation
+# (https://pypi.python.org/pypi/pyfileseq
+#  or https://github.com/aldergren/pyfileseq)
+
+def gen_name(prefix, i):
+    return prefix + unicode(i)
+
+
+def count_files_with(prefix):
+    count = 0
+    while os.path.exists(gen_name(prefix, count)):
+        count += 1
+
+    return count
+
+
+def gen_names(prefix, count):
+    for i in xrange(count):
+        yield gen_name(prefix, i)
+
+
 def main(batch_class, arguments):
+    # TODO: argparse & help
+    # TODO: test
     input, output = arguments
-    batch_class().process(input, output)
+    if os.path.exists(input):
+        # single input
+        transform_batch((batch_class, input, output))
+    else:
+        # multiple input -> multiprocessing
+        input_count = count_files_with(prefix=input)
+        pool = multiprocessing.Pool(maxtasksperchild=1)
+        pool.map(
+            transform_batch,
+            zip(
+                itertools.repeat(batch_class),
+                gen_names(input, input_count),
+                gen_names(output, input_count)),
+            chunksize=1)
+        pool.terminate()
+        pool.join()
