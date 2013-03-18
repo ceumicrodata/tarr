@@ -36,10 +36,10 @@ class TarrCsvReader(tarr.batch.Reader):
             for i in xrange(len(header)))
         self.extract_id = (
             make_extractor(
-                'Id', self.id_fields, accessors))
+                'Id', id_fields, accessors))
         self.extractor_payload = (
             make_extractor(
-                'Input', self.payload_fields, accessors))
+                'Input', payload_fields, accessors))
 
     def __iter__(self):
         return self
@@ -74,7 +74,8 @@ class CsvWriter(tarr.batch.Writer):
         self.writer.writerow(header)
 
     def write(self, data):
-        self.writerow([extractor(data) for extractor in self.extractors])
+        self.writer.writerow(
+            [extractor(data) for extractor in self.extractors])
 
     def close(self):
         self.file.close()
