@@ -13,6 +13,7 @@ def is_animal(data):
 def animal(data):
     return 'ANIMAL'
 
+
 @tarr.rule
 def other(data):
     return 'something else'
@@ -33,8 +34,9 @@ class TestDecorators(unittest.TestCase):
     def test_decorators(self):
         program = Program(PROGRAM)
 
-        self.assertEqual('ANIMAL', program.run(Data(1, 'fish')).payload)
-        self.assertEqual('ANIMAL', program.run(Data(1, 'cat')).payload)
-        self.assertEqual('ANIMAL', program.run(Data(1, 'dog')).payload)
-        self.assertEqual('something else', program.run(Data(1, 'flower')).payload)
-        self.assertEqual('something else', program.run(Data(1, 'rock')).payload)
+        assertEqual = self.assertEqual
+        assertEqual('ANIMAL', program.run(Data(1, 'fish')).payload)
+        assertEqual('ANIMAL', program.run(Data(1, 'cat')).payload)
+        assertEqual('ANIMAL', program.run(Data(1, 'dog')).payload)
+        assertEqual('something else', program.run(Data(1, 'flower')).payload)
+        assertEqual('something else', program.run(Data(1, 'rock')).payload)

@@ -20,9 +20,7 @@ class Test_WRITE_TO_FILE(unittest.TestCase):
 
             with open(tempfile) as f:
                 self.assertEqual(
-                    ['id: payload\n',
-                    '1: Data\n'],
-                    f.readlines())
+                    ['id: payload\n', '1: Data\n'], f.readlines())
 
     def test_returns_data_as_is(self):
         with tempdir.TempDir() as d:

@@ -91,7 +91,6 @@ class TarrBatchTransform(BatchTransform):
             return data
 
 
-
 def transform_batch(tio):
     # multiprocessing.Pool.map supports one iterable argument
     # so we have to pack and unpack them into/from a tuple

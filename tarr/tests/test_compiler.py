@@ -6,17 +6,21 @@ import tarr.tests.test_compiler_base
 
 Noop = m.Instruction()
 
+
 @m.rule
 def add1(n):
     return n + 1
+
 
 @m.rule
 def const_odd(any):
     return 'odd'
 
+
 @m.rule
 def const_even(any):
     return 'even'
+
 
 @m.branch
 def odd(n):
@@ -32,6 +36,7 @@ def increase_if_odd(n):
 
 class WellKnownException(Exception):
     pass
+
 
 @m.rule
 def die(param):
@@ -129,9 +134,11 @@ subgraph "cluster_su\"bprogram" {
 
 class Test_Program(tarr.tests.test_compiler_base.Test_Program):
 
-    # verify, that the functionality of the parent is intact - Liskov's substitution principle
+    # verify, that the functionality of the parent is intact
+    # - Liskov's substitution principle
 
-    # NOTE: this test class will pull in all tests from tarr.test_compiler_base.Test_Program but run with
+    # NOTE: this test class will pull in all tests from
+    #  tarr.test_compiler_base.Test_Program but run with
     # the compiler.Program class, not with compiler_base.Program class
 
     PROGRAM_CLASS = m.Program
@@ -140,7 +147,7 @@ class Test_Program(tarr.tests.test_compiler_base.Test_Program):
 class Test_Program_visualization(unittest.TestCase):
 
     visualized_program_spec = [
-        'su"bprogram', # name contains " to check dot escape
+        'su"bprogram',  # name contains " to check dot escape
         m.RETURN_TRUE,
 
         m.DEF ('su"bprogram'),
@@ -156,8 +163,11 @@ class Test_Program_visualization(unittest.TestCase):
 
     def assertEqualText(self, expected, actual):
         if expected != actual:
-            self.assertEqual(expected.splitlines(), actual.splitlines()) # convert to list of lines and compare them
-            self.fail('output differ from expected in whitespace stripped by .splitlines()')
+            # convert to list of lines and compare them
+            self.assertEqual(expected.splitlines(), actual.splitlines())
+            self.fail(
+                'output differ from expected'
+                ' in whitespace stripped by .splitlines()')
 
     def test_to_text_without_statistics(self):
         prog = self.program()
@@ -202,7 +212,8 @@ class Test_Program_statistics(unittest.TestCase):
             False: m.RETURN_FALSE,
             None: m.RETURN_TRUE
         }
-        prog = m.Program([Noop, RETURN_MAP[condition], Noop, Noop, m.RETURN_TRUE])
+        prog = m.Program(
+            [Noop, RETURN_MAP[condition], Noop, Noop, m.RETURN_TRUE])
         prog.runner.ensure_statistics(1)
         return prog
 
@@ -278,7 +289,8 @@ class Test_Program_statistics(unittest.TestCase):
 
         self.assertEqual(1, prog.statistics[0].item_count)
 
-    def assert_exception_raised_attribute_is_untouched(self, attribute, initial_value):
+    def assert_exception_raised_attribute_is_untouched(
+            self, attribute, initial_value):
         prog = self.die_prog()
         setattr(prog.statistics[0], attribute, initial_value)
 
@@ -288,12 +300,14 @@ class Test_Program_statistics(unittest.TestCase):
 
     def test_assert_exception_raised_attribute_is_untouched(self):
         try:
-            self.assert_exception_raised_attribute_is_untouched('item_count', 1)
+            self.assert_exception_raised_attribute_is_untouched(
+                'item_count', 1)
         except AssertionError:
             # item_count supposed to be incremented, so the above should fail
             pass
         else:
-            self.fail('Expected a failure - item_count supposed to be incremented!')
+            self.fail(
+                'Expected a failure - item_count supposed to be incremented!')
 
     def test_on_exception_success_count_is_not_touched(self):
         self.assert_exception_raised_attribute_is_untouched('success_count', 2)
@@ -326,7 +340,8 @@ class Test_decorators(unittest.TestCase):
         self.assertEqualData(Data(id, 2), prog.run(Data(id, 1)))
 
     def test_branch(self):
-        # program: convert an odd number to string 'odd', an even number to 'even'
+        # program: convert an odd number to string 'odd',
+        # an even number to 'even'
         prog = m.Program([
             m.IF (odd),
                 const_odd,
@@ -340,7 +355,8 @@ class Test_decorators(unittest.TestCase):
 
     def test_rule_branch(self):
         # program: add 2 to value if odd, else leave it
-        prog = m.Program([
+        prog = m.Program(
+            [
             m.IF (increase_if_odd),
                 add1,
             m.ENDIF,
@@ -351,7 +367,8 @@ class Test_decorators(unittest.TestCase):
         self.assertEqualData(Data(id, 3), prog.run(Data(id, 1)))
 
     def test_multiple_use_of_instructions(self):
-        # program: convert an odd number to string 'odd', an even number to 'even'
+        # program: convert an odd number to string 'odd',
+        # an even number to 'even'
         prog = m.Program([
             odd,
             m.IF (odd),

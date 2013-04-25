@@ -71,6 +71,7 @@ Add1 = Add(1)
 def next_instruction(i):
     return i.next_instruction(exit_status=True)
 
+
 class Test_Path(unittest.TestCase):
 
     def test_NewPathAppender(self):
@@ -267,7 +268,11 @@ class Test_Program(unittest.TestCase):
 
     def test_duplicate_definition_of_label_is_not_compilable(self):
         with self.assertRaises(DuplicateLabelError):
-            self.program([RETURN_TRUE, DEF('label'), Noop, RETURN_TRUE, DEF('label'), Noop])
+            self.program(
+                [
+                RETURN_TRUE,
+                DEF('label'), Noop, RETURN_TRUE,
+                DEF('label'), Noop])
 
     def test_incomplete_program_is_not_compilable(self):
         with self.assertRaises(UndefinedLabelError):
@@ -279,7 +284,8 @@ class Test_Program(unittest.TestCase):
 
     def test_label_definition_within_label_def_is_not_compilable(self):
         with self.assertRaises(FallOverOnDefineError):
-            self.program([RETURN_TRUE, DEF('label'), DEF('label2'), RETURN_TRUE])
+            self.program(
+                [RETURN_TRUE, DEF('label'), DEF('label2'), RETURN_TRUE])
 
     def test_program_without_closing_return_is_not_compilable(self):
         with self.assertRaises(UnclosedProgramError):
@@ -290,7 +296,8 @@ class Test_Program(unittest.TestCase):
             self.program([RETURN_TRUE, DEF('label'), Noop, 'label'])
 
     def test_branch_on_yes(self):
-        prog = self.program([
+        prog = self.program(
+            [
             IF (IsOdd),
                 Add1,
             ELSE,
@@ -307,7 +314,8 @@ class Test_Program(unittest.TestCase):
         self.assertEqual(6, prog.run(4))
 
     def test_branch_on_no(self):
-        prog = self.program([
+        prog = self.program(
+            [
             IF (IsOdd),
                 Add1,
                 Add1,
@@ -324,7 +332,8 @@ class Test_Program(unittest.TestCase):
         self.assertEqual(5, prog.run(3))
 
     def test_string_as_call_symbol(self):
-        prog = self.program([
+        prog = self.program(
+            [
             '+1', '+2', RETURN_TRUE,
 
             DEF('+2'), '+1', '+1', RETURN_TRUE,
@@ -358,7 +367,9 @@ class Test_Program(unittest.TestCase):
                 Const('IF_NOT'),
                 IF_NOT (Eq('value')),
                     Const('IF_NOT'),
-                    # here we have the bug: this path is merged to here, but outside this path is *ignored*, its ELSE path is merged
+                    # here we have the bug: this path is merged to here,
+                    # but outside this path is *ignored*,
+                    # its ELSE path is merged
                 ENDIF,
             ENDIF,
             Add('.'),
@@ -552,7 +563,8 @@ class Test_Program(unittest.TestCase):
                 ])
 
     def test_sub_programs(self):
-        prog = self.program([
+        prog = self.program(
+            [
             Add1,
             m.RETURN_TRUE,
             m.DEF ('x1'),
@@ -568,25 +580,26 @@ class Test_Program(unittest.TestCase):
         sub_programs = iter(prog.sub_programs())
         sub_program = sub_programs.next()
         self.assertEqual(None, sub_program[0])
-        self.assertEqual(2, len(sub_program[1])) # Add1, RETURN
+        self.assertEqual(2, len(sub_program[1]))  # Add1, RETURN
 
         sub_program = sub_programs.next()
         self.assertEqual('x1', sub_program[0])
-        self.assertEqual(1, len(sub_program[1])) # RETURN
+        self.assertEqual(1, len(sub_program[1]))  # RETURN
 
         sub_program = sub_programs.next()
         self.assertEqual('x2', sub_program[0])
-        self.assertEqual(1, len(sub_program[1])) # RETURN
+        self.assertEqual(1, len(sub_program[1]))  # RETURN
 
         sub_program = sub_programs.next()
         self.assertEqual('x3', sub_program[0])
-        self.assertEqual(3, len(sub_program[1])) # Add1, Add1, RETURN
+        self.assertEqual(3, len(sub_program[1]))  # Add1, Add1, RETURN
 
         with self.assertRaises(StopIteration):
             sub_programs.next()
 
     def program_for_visiting_with_all_features(self):
-        return self.program([
+        return self.program(
+            [
             'x', m.RETURN_TRUE,
 
             m.DEF ('x'),
@@ -611,7 +624,8 @@ class Test_Program(unittest.TestCase):
         prog.accept(remembering_visitor)
 
         i = prog.instructions
-        self.assertEqual([
+        self.assertEqual(
+            [
             ('subprogram', None),
                 ('call', i[0]),
                 ('return', i[1]),

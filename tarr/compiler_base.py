@@ -1,23 +1,30 @@
 class DuplicateLabelError(Exception):
     pass
 
+
 class UndefinedLabelError(Exception):
     pass
+
 
 class BackwardReferenceError(Exception):
     pass
 
+
 class FallOverOnDefineError(Exception):
     pass
+
 
 class UnclosedProgramError(Exception):
     pass
 
+
 class MissingEndIfError(Exception):
     pass
 
+
 class MultipleElseError(Exception):
     pass
+
 
 class ElIfAfterElseError(Exception):
     pass
@@ -175,7 +182,8 @@ class Call(BranchingInstruction):
 
     def compile(self, compiler):
         super(Call, self).compile(compiler)
-        compiler.register_linker(self.label, compiler.last_instruction.set_start_instruction)
+        compiler.register_linker(
+            self.label, compiler.last_instruction.set_start_instruction)
 
     def set_start_instruction(self, instruction):
         self.start_instruction = instruction
@@ -197,7 +205,8 @@ class CompileIf(Compilable):
         branch_instruction.compile(compiler)
 
         if_path, else_path = compiler.path.split(compiler.last_instruction)
-        compiler.control_stack.append(IfElseControlFrame(compiler.path, if_path, else_path))
+        compiler.control_stack.append(
+            IfElseControlFrame(compiler.path, if_path, else_path))
 
         compiler.path = if_path
 
@@ -236,7 +245,8 @@ class CompileElIf(Compilable):
         branch_instruction = compiler.compilable(self.branch_instruction)
         branch_instruction.compile(compiler)
 
-        frame.elif_path, frame.else_path = frame.else_path.split(compiler.last_instruction)
+        frame.elif_path, frame.else_path = frame.else_path.split(
+            compiler.last_instruction)
         compiler.path = frame.elif_path
 
         compiler.control_stack.append(frame)
@@ -398,9 +408,11 @@ class Path(object):
     def split(self, branch_instruction):
         self.close()
         true_path = Path()
-        true_path.set_appender(TrueBranchAppender(true_path, branch_instruction))
+        true_path.set_appender(
+            TrueBranchAppender(true_path, branch_instruction))
         false_path = Path()
-        false_path.set_appender(FalseBranchAppender(false_path, branch_instruction))
+        false_path.set_appender(
+            FalseBranchAppender(false_path, branch_instruction))
         return true_path, false_path
 
     def join(self, path):
@@ -434,7 +446,8 @@ class IfElseControlFrame(object):
     * elif_path: optional, used by ELIF to keep the current conditional path
     * else_path: ELSE branch goes here
 
-    ENDIF merges if_path, elif_path, else_path back to main_path, before restoring
+    ENDIF merges if_path, elif_path, else_path back to main_path,
+    before restoring
     '''
 
     def __init__(self, main_path, if_path, else_path):
@@ -498,7 +511,8 @@ class Compiler(object):
 
         self.labels_with_indices.append((label, len(self.instructions)))
         self.path = Path()
-        # can not resolve label references yet, as the content (first instruction) is not known yet
+        # can not resolve label references yet, as the content
+        # (first instruction) is not known yet
         self.path.set_appender(DefineAppender(self, self.path, label))
 
     def complete_define_label(self, label, instruction):

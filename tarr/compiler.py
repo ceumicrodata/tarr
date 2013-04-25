@@ -117,7 +117,8 @@ class ToTextVisitor(compiler_base.ProgramVisitor):
         if i_return.return_value is None:
             self.format_instruction(i_return, 'RETURN')
         else:
-            self.format_instruction(i_return, 'RETURN {0}'.format(i_return.return_value))
+            self.format_instruction(
+                i_return, 'RETURN {0}'.format(i_return.return_value))
 
     def visit_instruction(self, instruction):
         self.addcode(instruction, instruction.instruction_name)
@@ -137,16 +138,23 @@ class ToTextVisitorWithStatistics(ToTextVisitor):
         self.addcode(instruction, name)
         on_success = instruction.next_instruction(exit_status=True).index
         on_failure = instruction.next_instruction(exit_status=False).index
-        self.addcomment('  # True  -> {0}   (*{1.success_count})'.format(on_success, statistics))
-        self.addcomment('  # False -> {0}   (*{1.failure_count})'.format(on_failure, statistics))
+        self.addcomment(
+            '  # True  -> {0}   (*{1.success_count})'
+            .format(on_success, statistics))
+        self.addcomment(
+            '  # False -> {0}   (*{1.failure_count})'
+            .format(on_failure, statistics))
 
     def format_instruction(self, instruction, name):
         statistics = self.statistics[instruction.index]
-        self.addcode(instruction, '{0}   (*{1.item_count})'.format(name, statistics))
+        self.addcode(
+            instruction, '{0}   (*{1.item_count})'.format(name, statistics))
 
     def format_call_line(self, i_call):
         statistics = self.statistics[i_call.index]
-        return 'CALL "{0}"    (*{1.item_count})'.format(i_call.label, statistics)
+        return (
+            'CALL "{0}"    (*{1.item_count})'
+            .format(i_call.label, statistics))
 
 
 class ToDotVisitor(compiler_base.ProgramVisitor):
@@ -158,10 +166,7 @@ class ToDotVisitor(compiler_base.ProgramVisitor):
     def text(self):
         extras = []
         if self.inter_cluster_edges:
-            extras.extend(
-                ['',
-                '// inter-cluster-edges'
-                ])
+            extras.extend(['', '// inter-cluster-edges'])
             extras.extend(self.inter_cluster_edges)
         extras.append('}')
         return '\n'.join(self.lines + extras)
@@ -170,7 +175,8 @@ class ToDotVisitor(compiler_base.ProgramVisitor):
         self.lines.append(line)
 
     def add_inter_cluster_edge(self, instruction1, instruction2, label):
-        self.inter_cluster_edges.append(self.format_edge(instruction1, instruction2, label))
+        self.inter_cluster_edges.append(
+            self.format_edge(instruction1, instruction2, label))
 
     def enter_subprogram(self, label, instructions):
         self.addline('')
@@ -186,7 +192,8 @@ class ToDotVisitor(compiler_base.ProgramVisitor):
         return ''
 
     def visit_call(self, i_call):
-        self.add_inter_cluster_edge(i_call, i_call.start_instruction, self.call_label(i_call))
+        self.add_inter_cluster_edge(
+            i_call, i_call.start_instruction, self.call_label(i_call))
         self.format_branch(i_call, 'CALL {0}'.format(i_call.label))
 
     def visit_return(self, i_return):
@@ -258,15 +265,20 @@ class ToDotVisitorWithStatistics(ToDotVisitor):
 
     def add_return_node(self, instruction, name):
         statistics = self.statistics[instruction.index]
-        self.add_node(instruction, '{0}: {1.item_count}'.format(name, statistics))
+        self.add_node(
+            instruction, '{0}: {1.item_count}'.format(name, statistics))
 
     def format_branch(self, instruction, name):
         self.add_node(instruction, name)
         on_success = instruction.next_instruction(exit_status=True)
         on_failure = instruction.next_instruction(exit_status=False)
         statistics = self.statistics[instruction.index]
-        self.add_edge(instruction, on_success, label='True: {0.success_count}'.format(statistics))
-        self.add_edge(instruction, on_failure, label='False: {0.failure_count}'.format(statistics))
+        self.add_edge(
+            instruction, on_success,
+            label='True: {0.success_count}'.format(statistics))
+        self.add_edge(
+            instruction, on_failure,
+            label='False: {0.failure_count}'.format(statistics))
 
     def call_label(self, i_call):
         statistics = self.statistics[i_call.index]
@@ -275,7 +287,8 @@ class ToDotVisitorWithStatistics(ToDotVisitor):
 
 class Program(compiler_base.Program):
 
-    # FIXME: Program.__init__ should initialize statistic as well by calling runner.ensure_statistics
+    # FIXME: Program.__init__ should initialize statistic
+    # as well by calling runner.ensure_statistics
     def make_runner(self):
         return StatisticsCollectorRunner()
 
@@ -361,6 +374,7 @@ def branch(func):
 
 HAVE_NOT_DONE_IT = object()
 
+
 class TarrBranchRuleInstruction(TarrBranchInstruction):
 
     def run(self, runner, data):
@@ -375,13 +389,17 @@ class TarrBranchRuleInstruction(TarrBranchInstruction):
 # FIXME: rename to branch_if_not_done
 def branch_rule(func):
     '''
-    Decorator, enable function to be used as both a rule and a condition in a Tarr program.
+    Decorator, enable function to be used as both a rule and a condition
+    in a Tarr program.
 
-    The intended use is to try to make progress and return with the special value HAVE_NOT_DONE_IT if could not make it, otherwise the new value.
+    The intended use is to try to make progress and return with the special
+    value HAVE_NOT_DONE_IT if could not make it, otherwise the new value.
 
-    WARNING: if the input is modified in-place, its value WILL be modified even if returning HAVE_NOT_DONE_IT!
+    WARNING: if the input is modified in-place, its value WILL be modified
+    even if returning HAVE_NOT_DONE_IT!
 
-    To use as a condition: return either the input or the special value HAVE_NOT_DONE_IT.
+    To use as a condition: return either the input or the special value
+    HAVE_NOT_DONE_IT.
     To use as a rule: return the modified input data.
 
     Usage:

@@ -2,7 +2,7 @@ import tarr.batch
 from tarr.data import Data
 from tarr.payload import New as new_payload
 import unicodecsv
-import collections # namedtuple
+import collections  # namedtuple
 import operator
 
 # FIXME: add tests

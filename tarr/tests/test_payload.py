@@ -8,7 +8,7 @@ class PayloadTests(object):
     KEYS = list()
     UNKNOWN_KEY = u'UNKNOWN KEY'
 
-    payload = None # should be supplied by setUp
+    payload = None  # should be supplied by setUp
 
     def test_input(self):
         self.assertIs(self.INPUT, self.payload.input)

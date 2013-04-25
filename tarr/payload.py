@@ -37,7 +37,8 @@ class BasePayload(object):
     def __getitem__(self, key):
         raise KeyError(key)
 
-    def with_new_result(self, transform_name, key, value, new_input=NO_NEW_INPUT):
+    def with_new_result(
+            self, transform_name, key, value, new_input=NO_NEW_INPUT):
         return AddResult(self, transform_name, key, value, new_input)
 
     def with_key_removed(self, transform_name, key):
